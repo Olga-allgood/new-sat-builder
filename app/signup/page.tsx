@@ -10,53 +10,43 @@ export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
-    try {
+
       // 1️. Sign up user
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       })
 
-      if (signUpError) {
-        throw signUpError
-      }
-
-      const user = data.user
-      if (!user) {
-        throw new Error('User not created')
+      if (error) {
+        setError(error.message)
+        setLoading(false)
       }
 
       // 2. Create profile (NO password)
-      const { error: profileError } = await supabase
+      if (data.user) { await supabase 
         .from('profiles')
         .insert({
-          id: user.id,
-          email: user.email,
+          id: data.user.id,
+          email: data.user.email,
         })
-
-      if (profileError) {
-        throw profileError
+        router.push('/game')
       }
 
       // 3️.Redirect → Header will pick up session
-      router.push('/')
+    
+      
     }  
-    catch (err: unknown) {
-  const msg = err instanceof Error ? err.message : 'Something went wrong during signup';
-  console.error(msg);
-  alert(msg);
-}
-    finally {
-      setLoading(false)
-    }
-  }
+  
+  
 
   return (
+    <div>
     <form onSubmit={handleSignup}>
       <h1>Sign up</h1>
 
@@ -80,5 +70,7 @@ export default function Signup() {
         {loading ? 'Creating account…' : 'Sign up'}
       </button>
     </form>
+    {error&&(<p>{error}</p>)}
+    </div>
   )
 }

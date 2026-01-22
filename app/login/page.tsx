@@ -9,33 +9,29 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+  
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-
-      if (error) throw error;
-      if (!data.session) throw new Error('Login failed');
-
-      router.push('/'); // Header will pick up session
-    } catch (err) {
-      console.error(err);
-      if (err instanceof Error) alert(err.message);
-      else alert('Something went wrong during login');
-    } finally {
-      setLoading(false);
-    }
+      if (error){
+        setError(error.message)
+        setLoading(false)
+      } else {
+        router.push('/game')
+      }
   };
 
   return (
+    <div>
+     <h1>Login</h1>
     <form onSubmit={handleLogin}>
-      <h1>Login</h1>
       <input
         type="email"
         placeholder="Email"
@@ -54,5 +50,7 @@ export default function LoginPage() {
         {loading ? 'Logging in…' : 'Login'}
       </button>
     </form>
+    {error&&(<p>{error}</p>)}
+    </div>
   );
 }
