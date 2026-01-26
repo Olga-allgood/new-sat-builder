@@ -8,9 +8,9 @@ interface CompleteDisplayProps {word: string,
 
 export default function CompleteDisplay({word, meaning, examples, failed}: CompleteDisplayProps) {
     return (<div>
-           <p>{failed?"You lost. Keep practicing!":"Congrats. You guessed the word!"}</p> 
+           <p>{failed?"Practice makes progress. Remeber to play this game every day to see results!":"Congrats. You guessed the word!"}</p> 
            <div>
-            <h1>`The meaning of ${word}`</h1>
+            <h1>{`The meaning of ${word}`}</h1>
             <p>{meaning}</p>
            </div>
            {examples.length > 0 && 

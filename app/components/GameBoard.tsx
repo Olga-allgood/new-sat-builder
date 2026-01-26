@@ -21,7 +21,7 @@ export default function GameBoard({userId}: GameBoard) {
 
 
     function isComplete(word: string, guessed: Set <string>){
-        const word_letters=word.toLowerCase().split("")
+        const word_letters=word.toUpperCase().split("")
 
        for (const letter of word_letters){
         if (!guessed.has(letter)){
@@ -90,23 +90,35 @@ export default function GameBoard({userId}: GameBoard) {
 // listen for keyboard input and translate this into game, update the state 
     useEffect(() => {
     function handleKeyPress(e: KeyboardEvent){
-       
+    // clear the error automatically after a couple of seconds so it doesn’t linger:
         if(!/^[a-zA-Z]$/.test(e.key)){
             setError("You need to choose a letter")
+            setTimeout(() => setError(''), 2000); // clears after 2 seconds
             return
         } 
         if(isCompleted || isFailed || loading || !currentWord){
     
             return 
         }
-        const letter = e.key.toLowerCase()
+        // BUG in LOGIC!!
+
+                // User presses a letter → OK
+                // User presses the same letter again
+                // The bug was here:
+
+                // setError("You already used that letter")
+                // React re-renders
+                // GameBoard sees error !== ''
+                // Entire game UI is replaced with the “Try again” screen
+                // Game looks like it ended, even though logically it shouldn’t
+        const letter = e.key.toUpperCase()
         if(guessedLetters.has(letter) || incorrectGuesses.includes(letter)){
-            setError("You already used that letter")
+            // setError("You already used that letter")
             return 
         }
         // the state is not update if we push directly the letter to the state. Created a new set and 
         // updated the state with the new set. Otherwise React would not rerender
-        if (currentWord.word.toLowerCase().includes(letter)){
+        if (currentWord.word.toUpperCase().includes(letter)){
             const newGuess = new Set(guessedLetters)
             newGuess.add(letter)
             setGuessedLetters(newGuess)
@@ -145,15 +157,20 @@ export default function GameBoard({userId}: GameBoard) {
     return ()=> window.removeEventListener("keypress", handleKeyPress)
     }, [currentWord, isFailed, isCompleted, incorrectGuesses, sessionId, guessedLetters, loading])
 
-    if (error){
-        return (
-            <div>
-                <p>{error}</p>
-                <button onClick={startNewGame}>Try again</button>
-            </div>
-        )
+    // The code below was preventing live incorrect guesses to be displayed
+    
+    // if (error){
+    //     return (
+    //         <div>
+    //             <p>{error}</p>
+    //             <button onClick={startNewGame}>Try again</button>
+    //         </div>
+    //     )
         
-    }
+    // }
+    {error && <p style={{color: 'red'}}>{error}</p>}
+   
+
     if (!currentWord){
         return (
             <div>
@@ -161,11 +178,28 @@ export default function GameBoard({userId}: GameBoard) {
             </div>
         )
     }
+
+    function speakWord(word: string) {
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.lang = 'en-US'; // or another language if needed
+        speechSynthesis.speak(utterance);
+    }
+
     return (
         <div>
             <p>{isCompleted? "You guessed the word!": isFailed?"That's not the word.": "Press the button to play again"}</p>
-            <WordCard word={currentWord.word} guessedLetters={isFailed? new Set(currentWord.word.toLowerCase().split('')):guessedLetters}/>
-            {!isCompleted && !isFailed && <WordMeaning meaning={currentWord.meaning}/>}
+            <WordCard word={currentWord.word} guessedLetters={isFailed? new Set(currentWord.word.toUpperCase().split('')):guessedLetters}/>
+            
+            {(isCompleted || isFailed) && (
+                <button 
+                    onClick={() => speakWord(currentWord.word)} 
+                    disabled={!currentWord}
+                >
+                    🔊 Hear word
+                </button>
+            )}
+
+            {currentWord && <WordMeaning meaning={currentWord.meaning}/>}
             {incorrectGuesses.length > 0 && <div>
                 <p>Incorrect Guesses: {incorrectGuesses.length}/{currentWord.word.length*2}</p>
                 <p>You tried letters: {incorrectGuesses.join(", ").toUpperCase()}</p>
