@@ -2,9 +2,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from "@/app/lib/supabaseClient";
 import {word_with_examples} from "@/app/types/database";
+import WordCard from './WordCard';
+import WordMeaning from './WordMeaning';
+import CompleteDisplay from './CompleteDisplay';
 
 interface GameBoard {
-    id: string
+    userId: string
 }
 export default function GameBoard({userId}: GameBoard) {
     const [currentWord, setCurrentWord] = useState<word_with_examples | null>(null);
@@ -38,7 +41,9 @@ export default function GameBoard({userId}: GameBoard) {
         setIsFailed(false)
         
         const {data: words, error: wordError} = await supabase.from("words").select("*")
-        if (words.length == 0){
+        console.log(words, wordError)
+        
+        if (!words || words.length == 0){
             setError("No words available")
             setLoading(false)
         }
@@ -49,7 +54,7 @@ export default function GameBoard({userId}: GameBoard) {
         } 
         const randomNumber = Math.floor(Math.random() * words.length) 
         const randomWord = words[randomNumber];
-
+        // console.log(randomWord)
         const {data: examples, error: examplesError} = await supabase.from("examples").select("*").eq("word_id", randomWord.id)
         if(examplesError){
             setError(examplesError.message)
@@ -57,7 +62,7 @@ export default function GameBoard({userId}: GameBoard) {
             return
         }
         setCurrentWord({...randomWord, examples:examples || []})
-        const MAX_CUESSES = currentWord.word.length*2
+       
 
 
         // another query for the session
@@ -85,11 +90,13 @@ export default function GameBoard({userId}: GameBoard) {
 // listen for keyboard input and translate this into game, update the state 
     useEffect(() => {
     function handleKeyPress(e: KeyboardEvent){
+       
         if(!/^[a-zA-Z]$/.test(e.key)){
             setError("You need to choose a letter")
             return
         } 
-        if(isCompleted || isFailed || loading){
+        if(isCompleted || isFailed || loading || !currentWord){
+    
             return 
         }
         const letter = e.key.toLowerCase()
@@ -116,6 +123,7 @@ export default function GameBoard({userId}: GameBoard) {
 
         }
         else {
+             const MAX_GUESSES = currentWord.word.length*2
             const newIncorrectGuesses =[...incorrectGuesses, letter] 
             setIncorrectGuesses(newIncorrectGuesses)
             if (newIncorrectGuesses.length >= MAX_GUESSES){
@@ -156,15 +164,15 @@ export default function GameBoard({userId}: GameBoard) {
     return (
         <div>
             <p>{isCompleted? "You guessed the word!": isFailed?"That's not the word.": "Press the button to play again"}</p>
-            <WordCard word={currentWord.word} guessedLetters={isFailed?new Set(currentWord.word.toLowerCase().split('')):guessedLetters}/>
+            <WordCard word={currentWord.word} guessedLetters={isFailed? new Set(currentWord.word.toLowerCase().split('')):guessedLetters}/>
             {!isCompleted && !isFailed && <WordMeaning meaning={currentWord.meaning}/>}
             {incorrectGuesses.length > 0 && <div>
-                <p>Incorrect Guesses: {incorrectGuesses.length}/{MAX_GUESSES}</p>
+                <p>Incorrect Guesses: {incorrectGuesses.length}/{currentWord.word.length*2}</p>
                 <p>You tried letters: {incorrectGuesses.join(", ").toUpperCase()}</p>
                 </div>}
             {isCompleted || isFailed && <CompleteDisplay word={currentWord.word} meaning={currentWord.meaning} examples={currentWord.examples} failed={isFailed}/>}    
             <div>
-               <button onClick={startNewGame}>{isComplete || isFailed? "Start a new game": "Skip this word"}</button> 
+               <button onClick={startNewGame}>{isCompleted || isFailed? "Start a new game": "Skip this word"}</button> 
             </div>
         </div>
     )
