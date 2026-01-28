@@ -42,7 +42,7 @@ export default function GameBoard({userId}: GameBoard) {
         setIsCompleted(false)
         setIsFailed(false)
         
-        const {data: words, error: wordError} = await supabase.from("words").select("*")
+        const {data: words, error: wordError} = await supabase.from("words").select("*").or(`is_public.eq.true, user_id.eq.${userId}`)
         console.log(words, wordError)
         
         if (!words || words.length == 0){
@@ -77,9 +77,11 @@ export default function GameBoard({userId}: GameBoard) {
         }
         setSessionId(session.id)
         setLoading(false)
+        console.log(session.id, userId)
         
      
     }
+    
     useEffect(() => {
   // wrap async call
   (async () => {
@@ -92,7 +94,7 @@ export default function GameBoard({userId}: GameBoard) {
 
 // listen for keyboard input and translate this into game, update the state 
     useEffect(() => {
-    function handleKeyPress(e: KeyboardEvent){
+    async function handleKeyPress(e: KeyboardEvent){
          // Ignore keypresses if the focus is inside an input, textarea, or contenteditable
     const target = e.target as HTMLElement;
     if (
@@ -138,9 +140,17 @@ export default function GameBoard({userId}: GameBoard) {
             setGuessedLetters(newGuess)
         if(isComplete(currentWord.word, newGuess)){
             setIsCompleted(true)
+        console.log(sessionId)    
         if(sessionId){
-            supabase.from("game_sessions").update({status:true, correct_guesses:true}).eq("id", sessionId)
+            const { data, error } = await supabase
+                .from("game_sessions")
+                .update({ status: true, correct_guesses: true })
+                .eq("id", sessionId)
 
+  console.log("update result:", data, error)
+
+            // const {data, error} = supabase.from("game_sessions").update({status:true, correct_guesses:true}).eq("id", sessionId)
+            // console.log(data, error)
         }
         // dispatching event to the header. Telling it to update
         window.dispatchEvent(new Event("wordCompleted"))    
@@ -154,8 +164,9 @@ export default function GameBoard({userId}: GameBoard) {
             setIncorrectGuesses(newIncorrectGuesses)
             if (newIncorrectGuesses.length >= MAX_GUESSES){
                 setIsFailed(true)
+                console.log(sessionId)   
                 if(sessionId){
-            supabase.from("game_sessions").update({status:true, correct_guesses:false}).eq("id", sessionId)
+            await supabase.from("game_sessions").update({status:true, correct_guesses:false}).eq("id", sessionId)
 
         }
         // dispatching an event to the header (line 97)
