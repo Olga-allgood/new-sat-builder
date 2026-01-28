@@ -5,21 +5,23 @@ import {word_with_examples} from "@/app/types/database";
 import WordCard from './WordCard';
 import WordMeaning from './WordMeaning';
 import CompleteDisplay from './CompleteDisplay';
+import PersonalWordForm from './PersonalWordForm';
 
 interface GameBoard {
     userId: string
 }
 export default function GameBoard({userId}: GameBoard) {
     const [currentWord, setCurrentWord] = useState<word_with_examples | null>(null);
-    const [guessedLetters, setGuessedLetters] = useState <Set <string>>(new Set)
+    const [guessedLetters, setGuessedLetters] = useState <Set <string>>(new Set())
     const [incorrectGuesses, setIncorrectGuesses] = useState<string[]>([])
-    const [sessionId, setSessionId] = useState(null)
+    const [sessionId, setSessionId] = useState<string | null>(null)
     const [isCompleted, setIsCompleted] = useState(false)
     const [isFailed, setIsFailed] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
+    const [personalWord, setPersonalWord] = useState(false)
 
-
+    console.log(userId)
     function isComplete(word: string, guessed: Set <string>){
         const word_letters=word.toUpperCase().split("")
 
@@ -66,8 +68,8 @@ export default function GameBoard({userId}: GameBoard) {
 
 
         // another query for the session
-        const {data: session, error: sessionError} = await supabase.from("game_sessions").insert({user_id: userId, word_id:randomWord.id, status: false, correct_guesses:0, incorrect_guesses:0}).select().single()
-
+        const {data: session, error: sessionError} = await supabase.from("game_sessions").insert({user_id: userId, word_id:randomWord.id, status: false, correct_guesses:false}).select().single()
+      
         if(sessionError){
             setError(sessionError.message)
             setLoading(false)
@@ -75,6 +77,7 @@ export default function GameBoard({userId}: GameBoard) {
         }
         setSessionId(session.id)
         setLoading(false)
+        
      
     }
     useEffect(() => {
@@ -90,6 +93,17 @@ export default function GameBoard({userId}: GameBoard) {
 // listen for keyboard input and translate this into game, update the state 
     useEffect(() => {
     function handleKeyPress(e: KeyboardEvent){
+         // Ignore keypresses if the focus is inside an input, textarea, or contenteditable
+    const target = e.target as HTMLElement;
+    if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+    ) {
+        return;
+    }
+
+
     // clear the error automatically after a couple of seconds so it doesn’t linger:
         if(!/^[a-zA-Z]$/.test(e.key)){
             setError("You need to choose a letter")
@@ -168,7 +182,7 @@ export default function GameBoard({userId}: GameBoard) {
     //     )
         
     // }
-    {error && <p style={{color: 'red'}}>{error}</p>}
+ 
    
 
     if (!currentWord){
@@ -182,11 +196,12 @@ export default function GameBoard({userId}: GameBoard) {
     function speakWord(word: string) {
         const utterance = new SpeechSynthesisUtterance(word);
         utterance.lang = 'en-US'; // or another language if needed
-        speechSynthesis.speak(utterance);
+        speechSynthesis.speak(utterance);    
     }
 
     return (
-        <div>
+        <div> 
+            {error && <p style={{color: 'red'}}>{error}</p>}
             <p>{isCompleted? "You guessed the word!": isFailed?"That's not the word.": "Press the button to play again"}</p>
             <WordCard word={currentWord.word} guessedLetters={isFailed? new Set(currentWord.word.toUpperCase().split('')):guessedLetters}/>
             
@@ -206,7 +221,12 @@ export default function GameBoard({userId}: GameBoard) {
                 </div>}
             {isCompleted || isFailed && <CompleteDisplay word={currentWord.word} meaning={currentWord.meaning} examples={currentWord.examples} failed={isFailed}/>}    
             <div>
+               
                <button onClick={startNewGame}>{isCompleted || isFailed? "Start a new game": "Skip this word"}</button> 
+            </div>
+            <div>
+               {personalWord &&  <PersonalWordForm userProfile={userId}/>}
+                <button onClick={()=>setPersonalWord(!personalWord)}>{!personalWord?"Add Your Word":"Close the Form"}</button>
             </div>
         </div>
     )

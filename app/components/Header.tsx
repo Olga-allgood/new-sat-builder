@@ -120,6 +120,7 @@ if (!incorrectError && incorrectCount !== null) {
           <p>Correct guesses: {guessedWords}</p>
           <p>Incorrect guesses: {failedWords}</p>
           <button onClick={loggingOut}>Log Out</button>
+          <Link href="/history">Your history</Link>
         </>
       ) : (
         <>
