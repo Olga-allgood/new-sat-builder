@@ -10,6 +10,7 @@ interface PersonalWordFormProps {
 export default function PersonalWordForm({ userProfile }: PersonalWordFormProps) {
   const [word, setWord] = useState<string>('');
   const [meaning, setMeaning] = useState<string>(''); 
+  const [successMessage, setSuccessMessage] = useState<string>('');
   const [error, setError] = useState<string>('');
  
 
@@ -26,14 +27,15 @@ export default function PersonalWordForm({ userProfile }: PersonalWordFormProps)
           meaning,
           user_id: userProfile,    
           is_public: false,
-        });
+        }).select()
     if (error){
         setError(error.message)
     }    
 
 
-    console.log('Personal word:', word);
-    console.log('Meaning:', meaning);
+    console.log(data);
+  
+    setSuccessMessage(`"${word}" has been added`);
 
     setWord('');
     setMeaning('');
@@ -41,7 +43,8 @@ export default function PersonalWordForm({ userProfile }: PersonalWordFormProps)
 
   return (
     <div>
-        <p>{error}</p>
+        {error && <p>{error}</p>}
+        {successMessage && <p>{successMessage}</p> }
     <form onSubmit={handleSubmit}>
       <input
         type="text"

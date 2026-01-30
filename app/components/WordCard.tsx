@@ -1,3 +1,5 @@
+import styles from "./WordCard.module.css";
+
 interface WordCardProps {word:string,
                          guessedLetters: Set<string>
 }
@@ -5,10 +7,10 @@ interface WordCardProps {word:string,
 export default function WordCard({word, guessedLetters}:WordCardProps) {
 
     return (
-  <div>
+  <div className={styles.wordRow}>
     {word.split("").map((letter, index) => {
       const isGuessed = guessedLetters.has(letter.toUpperCase());
-      return <p key={index}>{isGuessed ? letter.toUpperCase() : "_"}</p>;
+      return <span key={index} className={styles.letter}>{isGuessed ? letter.toUpperCase() : "_"}</span>;
     })}
   </div>
 )

@@ -20,6 +20,7 @@ export default function GameBoard({userId}: GameBoard) {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [personalWord, setPersonalWord] = useState(false)
+    
 
     console.log(userId)
     function isComplete(word: string, guessed: Set <string>){
@@ -140,7 +141,7 @@ export default function GameBoard({userId}: GameBoard) {
             setGuessedLetters(newGuess)
         if(isComplete(currentWord.word, newGuess)){
             setIsCompleted(true)
-        console.log(sessionId)    
+        console.log(isCompleted)
         if(sessionId){
             const { data, error } = await supabase
                 .from("game_sessions")
@@ -164,7 +165,7 @@ export default function GameBoard({userId}: GameBoard) {
             setIncorrectGuesses(newIncorrectGuesses)
             if (newIncorrectGuesses.length >= MAX_GUESSES){
                 setIsFailed(true)
-                console.log(sessionId)   
+                console.log(isFailed)   
                 if(sessionId){
             await supabase.from("game_sessions").update({status:true, correct_guesses:false}).eq("id", sessionId)
 
@@ -230,7 +231,7 @@ export default function GameBoard({userId}: GameBoard) {
                 <p>Incorrect Guesses: {incorrectGuesses.length}/{currentWord.word.length*2}</p>
                 <p>You tried letters: {incorrectGuesses.join(", ").toUpperCase()}</p>
                 </div>}
-            {isCompleted || isFailed && <CompleteDisplay word={currentWord.word} meaning={currentWord.meaning} examples={currentWord.examples} failed={isFailed}/>}    
+            {(isCompleted || isFailed) && (<CompleteDisplay word={currentWord.word} meaning={currentWord.meaning} examples={currentWord.examples} failed={isFailed}/>)}    
             <div>
                
                <button onClick={startNewGame}>{isCompleted || isFailed? "Start a new game": "Skip this word"}</button> 

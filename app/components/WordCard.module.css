@@ -1,0 +1,9 @@
+.wordRow {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.letter {
+  font-size: 2rem;
+  font-weight: bold;
+}

@@ -7,6 +7,7 @@ interface CompleteDisplayProps {word: string,
 }
 
 export default function CompleteDisplay({word, meaning, examples, failed}: CompleteDisplayProps) {
+    console.log(examples)
     return (<div>
            <p>{failed?"Practice makes progress. Remeber to play this game every day to see results!":"Congrats. You guessed the word!"}</p> 
            <div>
@@ -14,16 +15,17 @@ export default function CompleteDisplay({word, meaning, examples, failed}: Compl
             <p>{meaning}</p>
            </div>
            {examples.length > 0 && 
-           <div>
+           (<div>
             <h1>Examples for the word</h1>
             <ul>
                 {examples.map((example) => (
                     <div key={example.id}>
-                    <li>example.example_standard</li>
-                    <li>example.example_funny</li>
+                    <li>{example.example_standard}</li>
+                    <li>{example.example_funny}</li>
                     </div>))}
+                    
             </ul>
-            </div>}
+            </div>)}
 
            </div>)
 }
