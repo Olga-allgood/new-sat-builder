@@ -16,7 +16,7 @@ export default function CompleteDisplay({word, meaning, examples, failed}: Compl
            </div>
            {examples.length > 0 && 
            (<div>
-            <h1>Examples for the word</h1>
+            <h1 className="underline">Examples for the word</h1>
             <ul>
                 {examples.map((example) => (
                     <div key={example.id}>

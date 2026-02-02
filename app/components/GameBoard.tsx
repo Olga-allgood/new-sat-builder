@@ -6,6 +6,8 @@ import WordCard from './WordCard';
 import WordMeaning from './WordMeaning';
 import CompleteDisplay from './CompleteDisplay';
 import PersonalWordForm from './PersonalWordForm';
+import { useRouter } from "next/navigation";
+import ArticlePanel from './ArticlePanel';
 
 interface GameBoard {
     userId: string
@@ -20,6 +22,12 @@ export default function GameBoard({userId}: GameBoard) {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [personalWord, setPersonalWord] = useState(false)
+    // Track last 5 failed words for article generation
+    const [failedWords, setFailedWords] = useState<{ word: string; definition: string }[]>([]);
+    // Show article panel
+    const [showArticle, setShowArticle] = useState(false);
+    const router = useRouter(); 
+
     
 
     console.log(userId)
@@ -160,7 +168,7 @@ export default function GameBoard({userId}: GameBoard) {
 
         }
         else {
-             const MAX_GUESSES = currentWord.word.length*2
+             const MAX_GUESSES = currentWord.word.length+3
             const newIncorrectGuesses =[...incorrectGuesses, letter] 
             setIncorrectGuesses(newIncorrectGuesses)
             if (newIncorrectGuesses.length >= MAX_GUESSES){
@@ -171,6 +179,15 @@ export default function GameBoard({userId}: GameBoard) {
 
         }
         // dispatching an event to the header (line 97)
+        // Add to failed words list (keep last 5)
+            setFailedWords((prev) => {
+            const newFailed = [
+            ...prev,
+            { word: currentWord.word, definition: currentWord.meaning },
+            ];
+            // Keep only last 5
+            return newFailed.slice(-5);
+            });
         window.dispatchEvent(new Event("wordFailed"))   
             }
         
@@ -206,10 +223,28 @@ export default function GameBoard({userId}: GameBoard) {
     }
 
     function speakWord(word: string) {
-        const utterance = new SpeechSynthesisUtterance(word);
-        utterance.lang = 'en-US'; // or another language if needed
-        speechSynthesis.speak(utterance);    
-    }
+  const utterance = new SpeechSynthesisUtterance(word);
+  utterance.lang = 'en-US';
+  speechSynthesis.speak(utterance);  
+}
+
+// async function generateArticle() {
+//   const res = await fetch("/api/generate-article", {
+//     method: "POST",
+//     headers: { "Content-Type": "application/json" },
+//     body: JSON.stringify({ userId })
+//   });
+
+//   const data = await res.json();
+
+//   if (!res.ok) {
+//     alert(data.error);
+//     return;
+//   }
+
+//   localStorage.setItem("article", data.article);
+//   router.push("/article"); // 👈 use router instead
+// }
 
     return (
         <div> 
@@ -228,7 +263,7 @@ export default function GameBoard({userId}: GameBoard) {
 
             {currentWord && <WordMeaning meaning={currentWord.meaning}/>}
             {incorrectGuesses.length > 0 && <div>
-                <p>Incorrect Guesses: {incorrectGuesses.length}/{currentWord.word.length*2}</p>
+                <p>Incorrect Guesses: {incorrectGuesses.length}/{currentWord.word.length+3}</p>
                 <p>You tried letters: {incorrectGuesses.join(", ").toUpperCase()}</p>
                 </div>}
             {(isCompleted || isFailed) && (<CompleteDisplay word={currentWord.word} meaning={currentWord.meaning} examples={currentWord.examples} failed={isFailed}/>)}    
@@ -236,6 +271,16 @@ export default function GameBoard({userId}: GameBoard) {
                
                <button onClick={startNewGame}>{isCompleted || isFailed? "Start a new game": "Skip this word"}</button> 
             </div>
+                {/* Article panel - show when user has failed words */}
+                    {failedWords.length >= 1 && !showArticle && (
+
+                    <div className="mt-6 text-center"> <button onClick={() => setShowArticle(true)} className="rounded bg-orange-600 px-4 py-2 text-white hover:bg-orange-700" > Generate Article </button> </div> )}
+                    {showArticle && failedWords.length > 0 && (
+                    <ArticlePanel
+                    failedWords={failedWords}
+                    onClose={() => setShowArticle(false)}
+                    />
+                    )}
             <div>
                {personalWord &&  <PersonalWordForm userProfile={userId}/>}
                 <button onClick={()=>setPersonalWord(!personalWord)}>{!personalWord?"Add Your Word":"Close the Form"}</button>

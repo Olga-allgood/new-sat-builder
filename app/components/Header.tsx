@@ -112,8 +112,8 @@ if (!incorrectError && incorrectCount !== null) {
     }
      return (
         
-    <header> 
-        <h2>SAT Vocabulary Builder</h2>
+    <header className="border flex justify-center items-center gap-6 py-4" > 
+        <h2 style={{ background: "var(--primary)", color:"var(--text-main)", padding:4 }}>SAT Vocabulary Builder</h2>
       {isLoggedIn ? (
         <>
           <p>Welcome, {user}</p>
