@@ -83,39 +83,98 @@ export default function HistoryPage(){
             <h2>`There is an error: ${error}`</h2>
         )
      }
-     return (
-        <div>
+    //  return (
+    //     <div>
             
-            <h1>Game History</h1>
-            <div>
-                <p>Correct Guesses: {correctGuesses.length}</p>
-                {correctGuesses.length==0?<p>No Words Guessed</p>:<div>{correctGuesses.map((item)=>
-                    (<div key={item.id}><p>{getWordData(item.words)?.word}</p>
-                                         <p>{getWordData(item.words)?.meaning}</p>
-                    </div>))}</div>}
+    //         <h1>Game History</h1>
+    //         <div>
+    //             <p>Correct Guesses: {correctGuesses.length}</p>
+    //             {correctGuesses.length==0?<p>No Words Guessed</p>:<div>{correctGuesses.map((item)=>
+    //                 (<div key={item.id}><p>{getWordData(item.words)?.word}</p>
+    //                                      <p>{getWordData(item.words)?.meaning}</p>
+    //                 </div>))}</div>}
 
-            </div>  
+    //         </div>  
 
-            <div>
-                <p>Incorrect Guesses: {incorrectGuesses.length}</p>
-                {incorrectGuesses.length==0?<p>No incorrect guesses</p>:<div>{incorrectGuesses.map((item)=>
-                    (<div key={item.id}><p>{getWordData(item.words)?.word}</p>
-                                         <p>{getWordData(item.words)?.meaning}</p>
-                    </div>))}</div>}
+    //         <div>
+    //             <p>Incorrect Guesses: {incorrectGuesses.length}</p>
+    //             {incorrectGuesses.length==0?<p>No incorrect guesses</p>:<div>{incorrectGuesses.map((item)=>
+    //                 (<div key={item.id}><p>{getWordData(item.words)?.word}</p>
+    //                                      <p>{getWordData(item.words)?.meaning}</p>
+    //                 </div>))}</div>}
 
-            </div>  
-            <div>
-                <h2>My Words</h2>
-                {myWords.length ==0?<p>No words have been added</p>: 
-                <ul>
-                    {myWords.map((item)=>
-                    (<li key={item.id}>{item.word} - {item.meaning}</li>))}
-                </ul>}
-            </div>
+    //         </div>  
+    //         <div>
+    //             <h2>My Words</h2>
+    //             {myWords.length ==0?<p>No words have been added</p>: 
+    //             <ul>
+    //                 {myWords.map((item)=>
+    //                 (<li key={item.id}>{item.word} - {item.meaning}</li>))}
+    //             </ul>}
+    //         </div>
 
-        </div>
-     )
+    //     </div>
+    //  )
      
+return (
+  <div className="min-h-screen bg-white px-6 py-8">
+    <div className="max-w-4xl mx-auto space-y-8">
+
+      <h1 className="text-3xl font-semibold text-[#2d76c0] text-center">Game History</h1>
+
+      {/* Correct guesses */}
+      <div className="bg-gray-50 border border-[#787b80]/30 rounded-md p-4 space-y-2">
+        <h2 className="font-medium text-gray-700">Correct Guesses: {correctGuesses.length}</h2>
+        {correctGuesses.length === 0 ? (
+          <p className="text-gray-500">No words guessed</p>
+        ) : (
+          <div className="space-y-1">
+            {correctGuesses.map((item) => (
+              <div key={item.id} className="p-2 border-b border-gray-200">
+                <p className="font-medium">{getWordData(item.words)?.word}</p>
+                <p className="text-gray-700">{getWordData(item.words)?.meaning}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Incorrect guesses */}
+      <div className="bg-gray-50 border border-[#787b80]/30 rounded-md p-4 space-y-2">
+        <h2 className="font-medium text-gray-700">Incorrect Guesses: {incorrectGuesses.length}</h2>
+        {incorrectGuesses.length === 0 ? (
+          <p className="text-gray-500">No incorrect guesses</p>
+        ) : (
+          <div className="space-y-1">
+            {incorrectGuesses.map((item) => (
+              <div key={item.id} className="p-2 border-b border-gray-200">
+                <p className="font-medium">{getWordData(item.words)?.word}</p>
+                <p className="text-gray-700">{getWordData(item.words)?.meaning}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* My Words */}
+      <div className="bg-gray-50 border border-[#787b80]/30 rounded-md p-4 space-y-2">
+        <h2 className="font-medium text-gray-700">My Words</h2>
+        {myWords.length === 0 ? (
+          <p className="text-gray-500">No words have been added</p>
+        ) : (
+          <ul className="list-disc list-inside text-gray-700 space-y-1">
+            {myWords.map((item) => (
+              <li key={item.id}>
+                <span className="font-medium">{item.word}</span> - {item.meaning}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+    </div>
+  </div>
+);
 
 
     

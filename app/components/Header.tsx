@@ -110,30 +110,100 @@ if (!incorrectError && incorrectCount !== null) {
         setFailedWords(0);
        
     }
-     return (
+  //    return (
         
-    <header className="border flex justify-center items-center gap-6 py-4" > 
-        <h2 style={{ background: "var(--primary)", color:"var(--text-main)", padding:4 }}>SAT Vocabulary Builder</h2>
+  //   <header className="border flex justify-center items-center gap-6 py-4" > 
+  //       <h2 style={{ background: "var(--primary)", color:"var(--text-main)", padding:4 }}>SAT Vocabulary Builder</h2>
+  //     {isLoggedIn ? (
+  //       <>
+  //         <p>Welcome, {user}</p>
+  //         <p>Correct guesses: {guessedWords}</p>
+  //         <p>Incorrect guesses: {failedWords}</p>
+  //         <button onClick={loggingOut}>Log Out</button>
+  //         <Link href="/history">Your history</Link>
+  //       </>
+  //     ) : (
+  //       <>
+  //       <Link href="/login">
+  //           Log In
+  //         </Link>
+  //         <Link href="/signup">
+  //           Sign Up
+  //         </Link>
+  //       </>
+  //     )}
+  //   </header>
+  // );
+return (
+  <header className="border-b border-[#787b80]/30 bg-white">
+    <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
+
+      {/* Logo / Title */}
+      <h2 className="text-xl font-semibold text-[#2d76c0]">
+        SAT Vocabulary Builder
+      </h2>
+
+      {/* Right-side content */}
       {isLoggedIn ? (
-        <>
-          <p>Welcome, {user}</p>
-          <p>Correct guesses: {guessedWords}</p>
-          <p>Incorrect guesses: {failedWords}</p>
-          <button onClick={loggingOut}>Log Out</button>
-          <Link href="/history">Your history</Link>
-        </>
+        <div className="flex items-center gap-6 text-sm text-gray-700">
+          <span>
+            Welcome, <span className="font-medium">{user}</span>
+          </span>
+
+          <span className="text-green-700">
+            ✓ {guessedWords}
+          </span>
+
+          <span className="text-red-600">
+            ✕ {failedWords}
+          </span>
+
+          <Link
+            href="/history"
+            className="text-[#009CDE] hover:underline font-medium"
+          >
+            Your history
+          </Link>
+
+          <button
+            onClick={loggingOut}
+            className="
+              px-4 py-2 rounded-md
+              border border-[#009CDE]
+              text-[#009CDE] font-medium
+              hover:bg-[#009CDE] hover:text-white
+              transition
+            "
+          >
+            Log Out
+          </button>
+        </div>
       ) : (
-        <>
-        <Link href="/login">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/login"
+            className="text-[#009CDE] font-medium hover:underline"
+          >
             Log In
           </Link>
-          <Link href="/signup">
+
+          <Link
+            href="/signup"
+            className="
+              px-4 py-2 rounded-md
+              bg-[#009CDE] text-white font-medium
+              hover:bg-[#2d76c0]
+              transition
+            "
+          >
             Sign Up
           </Link>
-        </>
+        </div>
       )}
-    </header>
-  );
+
+    </div>
+  </header>
+);
 }
 
     

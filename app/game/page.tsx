@@ -33,13 +33,21 @@ export default function GamePage(){
     }, [router]);
 
 
-    return (
-        <div>
-            <p>You are going to learn a lot today!</p>
-            {userId&&<GameBoard userId={userId}/>}
-        </div>
-    )
+    // return (
+    //     <div>
+    //         <p>You are going to learn a lot today!</p>
+    //         {userId&&<GameBoard userId={userId}/>}
+    //     </div>
+    // )
 
+return (
+  <div className="min-h-screen bg-white px-6 py-8">
+    <div className="max-w-3xl mx-auto text-center space-y-6">
+      <p className="text-lg text-gray-700 font-medium">Use your keyboard to select a letter!</p>
+      {userId && <GameBoard userId={userId} />}
+    </div>
+  </div>
+);
 
 
 }
