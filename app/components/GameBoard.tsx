@@ -701,126 +701,126 @@ export default function GameBoard({userId}: GameBoard) {
 //     </div>
 //   </div>
 // );
-return (
-  <div className="max-w-7xl mx-auto px-6 py-8">
+// return (
+//   <div className="max-w-7xl mx-auto px-6 py-8">
 
-    {/* Error */}
-    {error && (
-      <p className="mb-4 text-red-600 text-sm font-medium">
-        {error}
-      </p>
-    )}
+//     {/* Error */}
+//     {error && (
+//       <p className="mb-4 text-red-600 text-sm font-medium">
+//         {error}
+//       </p>
+//     )}
 
-    {/* GRID WRAPPER */}
-    <div className="grid grid-cols-1 lg:grid-cols-[70%_30%] gap-8">
+//     {/* GRID WRAPPER */}
+//     <div className="grid grid-cols-1 lg:grid-cols-[70%_30%] gap-8">
 
-      {/* ================= LEFT COLUMN (70%) ================= */}
-      <div className="space-y-6">
+//       {/* ================= LEFT COLUMN (70%) ================= */}
+//       <div className="space-y-6">
 
-        {/* Word card */}
-        <WordCard 
-          word={currentWord.word}
-          guessedLetters={
-            isFailed
-              ? new Set(currentWord.word.toUpperCase().split(""))
-              : guessedLetters
-          }
-          meaning={currentWord.meaning}
-        />
+//         {/* Word card */}
+//         <WordCard 
+//           word={currentWord.word}
+//           guessedLetters={
+//             isFailed
+//               ? new Set(currentWord.word.toUpperCase().split(""))
+//               : guessedLetters
+//           }
+//           meaning={currentWord.meaning}
+//         />
 
-        {/* Completion panel */}
-        {(isCompleted || isFailed) && (
-          <CompleteDisplay
-            word={currentWord.word}
-            meaning={currentWord.meaning}
-            examples={currentWord.examples}
-            failed={isFailed}
-          />
-        )}
+//         {/* Completion panel */}
+//         {(isCompleted || isFailed) && (
+//           <CompleteDisplay
+//             word={currentWord.word}
+//             meaning={currentWord.meaning}
+//             examples={currentWord.examples}
+//             failed={isFailed}
+//           />
+//         )}
 
-        {/* Article generation */}
-        {failedWords.length >= 1 && !showArticle && (
-          <div className="text-center">
-            <button
-              onClick={() => setShowArticle(true)}
-              className="px-5 py-2 rounded-md border border-[#009CDE] text-[#009CDE] font-medium hover:bg-[#009CDE] hover:text-white transition"
-            >
-              Generate Article
-            </button>
-          </div>
-        )}
+//         {/* Article generation */}
+//         {failedWords.length >= 1 && !showArticle && (
+//           <div className="text-center">
+//             <button
+//               onClick={() => setShowArticle(true)}
+//               className="px-5 py-2 rounded-md border border-[#009CDE] text-[#009CDE] font-medium hover:bg-[#009CDE] hover:text-white transition"
+//             >
+//               Generate Article
+//             </button>
+//           </div>
+//         )}
 
-        {showArticle && failedWords.length > 0 && (
-          <ArticlePanel
-            failedWords={failedWords}
-            onClose={() => setShowArticle(false)}
-          />
-        )}
+//         {showArticle && failedWords.length > 0 && (
+//           <ArticlePanel
+//             failedWords={failedWords}
+//             onClose={() => setShowArticle(false)}
+//           />
+//         )}
 
-        {/* Personal word */}
-        <div className="border-t border-gray-200 pt-6 space-y-4">
-          {personalWord && <PersonalWordForm userProfile={userId} />}
+//         {/* Personal word */}
+//         <div className="border-t border-gray-200 pt-6 space-y-4">
+//           {personalWord && <PersonalWordForm userProfile={userId} />}
 
-          <div className="text-center">
-            <button
-              onClick={() => setPersonalWord(!personalWord)}
-              className="text-[#009CDE] font-medium hover:underline"
-            >
-              {!personalWord ? "Add Your Word" : "Close the Form"}
-            </button>
-          </div>
-        </div>
+//           <div className="text-center">
+//             <button
+//               onClick={() => setPersonalWord(!personalWord)}
+//               className="text-[#009CDE] font-medium hover:underline"
+//             >
+//               {!personalWord ? "Add Your Word" : "Close the Form"}
+//             </button>
+//           </div>
+//         </div>
 
-      </div>
+//       </div>
 
-      {/* ================= RIGHT SIDEBAR (30%) ================= */}
-      <aside className="space-y-4">
+//       {/* ================= RIGHT SIDEBAR (30%) ================= */}
+//       <aside className="space-y-4">
 
-        {/* Correct */}
-        <div className="rounded-xl bg-gradient-to-br from-[#009CDE] to-[#2d76c0] p-6 text-white shadow-sm">
-          <p className="text-sm opacity-90">Correct</p>
-          <p className="text-4xl font-bold mt-1">{guessedLetters.size}</p>
-        </div>
+//         {/* Correct */}
+//         <div className="rounded-xl bg-gradient-to-br from-[#009CDE] to-[#2d76c0] p-6 text-white shadow-sm">
+//           <p className="text-sm opacity-90">Correct</p>
+//           <p className="text-4xl font-bold mt-1">{guessedLetters.size}</p>
+//         </div>
 
-        {/* Incorrect */}
-        <div className="rounded-xl bg-gradient-to-br from-[#1e3a8a] to-[#1e40af] p-6 text-white shadow-sm">
-          <p className="text-sm opacity-90">Incorrect</p>
-          <p className="mt-1">
-            <span className="font-medium">
-              {incorrectGuesses.length}/{currentWord.word.length + 3}
-            </span>
-          </p>
-          <p className="mt-1">
-            Letters tried:{" "}
-            <span className="font-medium">
-              {incorrectGuesses.join(", ").toUpperCase()}
-            </span>
-          </p>
-        </div>
+//         {/* Incorrect */}
+//         <div className="rounded-xl bg-gradient-to-br from-[#1e3a8a] to-[#1e40af] p-6 text-white shadow-sm">
+//           <p className="text-sm opacity-90">Incorrect</p>
+//           <p className="mt-1">
+//             <span className="font-medium">
+//               {incorrectGuesses.length}/{currentWord.word.length + 3}
+//             </span>
+//           </p>
+//           <p className="mt-1">
+//             Letters tried:{" "}
+//             <span className="font-medium">
+//               {incorrectGuesses.join(", ").toUpperCase()}
+//             </span>
+//           </p>
+//         </div>
 
-        {/* Hear word */}
-        {(isCompleted || isFailed) && (
-          <button
-            onClick={() => speakWord(currentWord.word)}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-[#009CDE] text-[#009CDE] font-medium hover:bg-[#009CDE] hover:text-white transition"
-          >
-            🔊 Hear Word
-          </button>
-        )}
+//         {/* Hear word */}
+//         {(isCompleted || isFailed) && (
+//           <button
+//             onClick={() => speakWord(currentWord.word)}
+//             className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-[#009CDE] text-[#009CDE] font-medium hover:bg-[#009CDE] hover:text-white transition"
+//           >
+//             🔊 Hear Word
+//           </button>
+//         )}
 
-        {/* Next / New Game */}
-        <button
-          onClick={startNewGame}
-          className="w-full px-4 py-3 rounded-lg bg-[#009CDE] text-white font-medium hover:bg-[#2d76c0] transition"
-        >
-          {isCompleted || isFailed ? "Start a new game" : "Next Word"}
-        </button>
+//         {/* Next / New Game */}
+//         <button
+//           onClick={startNewGame}
+//           className="w-full px-4 py-3 rounded-lg bg-[#009CDE] text-white font-medium hover:bg-[#2d76c0] transition"
+//         >
+//           {isCompleted || isFailed ? "Start a new game" : "Next Word"}
+//         </button>
 
-      </aside>
+//       </aside>
 
-    </div>
-  </div>
-);
+//     </div>
+//   </div>
+// );
 return (
   <div className="w-[80vw] mx-auto px-6 py-8">
 
