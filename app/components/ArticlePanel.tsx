@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { supabase } from '@/app/lib/supabaseClient';
 
 interface FailedWord {
 word: string;
@@ -39,6 +40,20 @@ throw new Error(data.error || "Failed to generate article");
 
 setArticle(data.article);
 setHasGenerated(true);
+
+// INSERTING ARTICLE INTO SUPABASE 
+const { data: auth } = await supabase.auth.getUser();
+
+  if (auth.user) {
+    await supabase.from("learning_articles").insert({
+      user_id: auth.user.id,
+      article: data.article,
+      failed_words: failedWords,
+    });
+  }
+
+
+
 } catch (err) {
 setError(err instanceof Error ? err.message : "Something went wrong");
 } finally {
