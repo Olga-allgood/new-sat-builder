@@ -47,21 +47,29 @@ export default function HistoryPage(){
             
             else{setCorrectGuesses((completedWords as GameHistory[])||[])}
 
-            const {data:IncompletedWords, error: errorIncompletedWords} = await supabase.from("game_sessions").select("id, word_id, status, correct_guesses, words(word,meaning)").eq("user_id", session.user.id).eq("correct_guesses", false);
-               if(errorIncompletedWords){
-              setError(errorIncompletedWords.message)
+            const {data:IncompletedWords, error: errorIncompletedWords} = 
+                  await supabase
+                    .from("game_sessions")
+                    .select("id, word_id, status, correct_guesses, words(word,meaning)")
+                    .eq("user_id", session.user.id).eq("correct_guesses", false);
+                  if(errorIncompletedWords){
+                  setError(errorIncompletedWords.message)
 
-            }
+                  }
+                
+                else{setIncorrectGuesses((IncompletedWords as GameHistory[])||[])}
+
+            const {data:myWords, error:myWordError} = 
+                await supabase
+                .from("words")
+                .select("*")
+                .eq("user_id", session.user.id)
             
-            else{setIncorrectGuesses((IncompletedWords as GameHistory[])||[])}
+                if(myWordError){
+                  setError(myWordError.message)
 
-            const {data:myWords, error:myWordError} = await supabase.from("words").select("*").eq("user_id", session.user.id)
-            
-            if(myWordError){
-              setError(myWordError.message)
-
-            }
-            else{setMyWords(myWords || [])}
+                }
+                else{setMyWords(myWords || [])}
 
 
             setCorrectGuesses((completedWords as GameHistory[])||[])
