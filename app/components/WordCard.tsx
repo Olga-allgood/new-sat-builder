@@ -9,47 +9,7 @@ interface WordCardProps {word:string,
 
 export default function WordCard({word, guessedLetters, meaning}:WordCardProps) {
 console.log(meaning)
-//     return (
-//   <div className={styles.wordRow}>
-//     {word.split("").map((letter, index) => {
-//       const isGuessed = guessedLetters.has(letter.toUpperCase());
-//       return <span key={index} className={styles.letter}>{isGuessed ? letter.toUpperCase() : "_"}</span>;
-//     })}
-//   </div>
-// )
-    // return (
-    //     <div>
-    //         {word.split("").map((letter,index) => {
-    //             const isGuessed = guessedLetters.has(letter.toUpperCase())
-    //             return (<p key={index}>{isGuessed?letter:"_"}</p>)
-    //         } )}
-    //     </div>
 
-    // )
-// return (
-//   <div className="bg-gray-50 border border-[#787b80]/30 rounded-md p-4">
-//   <div className="flex justify-center gap-2 p-2">
-    
-//     {word.split("").map((letter, index) => {
-//       const isGuessed = guessedLetters.has(letter.toUpperCase());
-//       return (
-//         <span
-//           key={index}
-//           className={`
-//             text-xl font-mono w-6 h-8 flex items-center justify-center
-//             border-b-2 border-gray-400
-//             ${isGuessed ? "text-[#2d76c0] font-bold" : "text-gray-400"}
-//           `}
-//         >
-//           {isGuessed ? letter.toUpperCase() : ""}
-//         </span>
-//       );
-//     })}
-//      {/* <p className="text-gray-700">{meaning}</p> */}
-//   </div>
-//   <p className="text-gray-700">{meaning}</p>
-//   </div>
-// );
 return (
   <div className="bg-gray-50 border border-[#787b80]/30 rounded-md p-6">
     <div className="flex justify-center gap-4 p-4">

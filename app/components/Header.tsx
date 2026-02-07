@@ -110,30 +110,7 @@ if (!incorrectError && incorrectCount !== null) {
         setFailedWords(0);
        
     }
-  //    return (
-        
-  //   <header className="border flex justify-center items-center gap-6 py-4" > 
-  //       <h2 style={{ background: "var(--primary)", color:"var(--text-main)", padding:4 }}>SAT Vocabulary Builder</h2>
-  //     {isLoggedIn ? (
-  //       <>
-  //         <p>Welcome, {user}</p>
-  //         <p>Correct guesses: {guessedWords}</p>
-  //         <p>Incorrect guesses: {failedWords}</p>
-  //         <button onClick={loggingOut}>Log Out</button>
-  //         <Link href="/history">Your history</Link>
-  //       </>
-  //     ) : (
-  //       <>
-  //       <Link href="/login">
-  //           Log In
-  //         </Link>
-  //         <Link href="/signup">
-  //           Sign Up
-  //         </Link>
-  //       </>
-  //     )}
-  //   </header>
-  // );
+ 
 return (
   <header className="border-b border-[#787b80]/30 bg-white">
     <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
