@@ -41,7 +41,7 @@ return (
     {/* Text Section */}
     <div className="max-w-xl text-center space-y-8">
       <h1 className="text-4xl md:text-5xl font-semibold text-[#2d76c0]">
-        Welcome to SAT Vocab Builder
+        Welcome to SAT Vocabulary Builder
       </h1>
 
       <p className="text-lg text-gray-600">
