@@ -54,7 +54,7 @@ if (!correctError && correctCount !== null) {
             .from('game_sessions')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', id)
-            .eq('status', false)
+            .eq('status', true)
 
 if (!incorrectError && incorrectCount !== null) {
   setFailedWords(incorrectCount)

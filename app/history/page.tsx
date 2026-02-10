@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/app/lib/supabaseClient';
-import {word} from '@/app/types/database';
+// import {word} from '@/app/types/database';
 
+interface WordWithExample {id: string, word: string, meaning: string, examples:{example_standard:string}}
 interface GameHistory {id:string, word_id:string, status: boolean, correct_guesses:boolean, words:word|word[]|null } 
 interface FailedWord {
   word: string;
@@ -18,7 +19,9 @@ interface LearningArticle {
   created_at: string | null;
 }
 
-function getWordData(words:word|word[]|null){
+
+
+function getWordData(words:WordWithExample|WordWithExample[]|null){
     if(!words){
         return null
     }
@@ -34,7 +37,7 @@ export default function HistoryPage(){
     const [userId, setUserId] = useState('');
     const [correctGuesses, setCorrectGuesses] = useState<GameHistory[]>([]);
     const [incorrectGuesses, setIncorrectGuesses] = useState<GameHistory[]>([]);
-    const [myWords, setMyWords] = useState<word[]>([]);
+    const [myWords, setMyWords] = useState<WordWithExample[]>([]);
     const [error, setError] = useState('');
     const [articles, setArticles] = useState<LearningArticle[]>([]);
 
@@ -47,9 +50,9 @@ export default function HistoryPage(){
                 return 
             }
             
-            const {data:completedWords, error: errorCompletedWords} = await supabase.from("game_sessions").select("id, word_id, status, correct_guesses, words(word,meaning)").eq("user_id", session.user.id).eq("correct_guesses", true);
+            const {data:completedWords, error: errorCompletedWords} = await supabase.from("game_sessions").select("id, word_id, status, correct_guesses, words(word,meaning)").eq("user_id", session.user.id).eq("status", true).eq("correct_guesses", true);
 
-                
+                console.log(completedWords)
             if(errorCompletedWords){
               setError(errorCompletedWords.message)
 
@@ -60,19 +63,24 @@ export default function HistoryPage(){
             const {data:IncompletedWords, error: errorIncompletedWords} = 
                   await supabase
                     .from("game_sessions")
-                    .select("id, word_id, status, correct_guesses, words(word,meaning)")
-                    .eq("user_id", session.user.id).eq("correct_guesses", false);
+                    .select("id, user_id, word_id, status, correct_guesses, words(word,meaning)")
+                    .eq("user_id", session.user.id)
+                    .eq("status", true)
+                    .eq("correct_guesses", false);
+                    console.log(IncompletedWords)
+                    console.log(correctGuesses)
+                    console.log(incorrectGuesses)
                   if(errorIncompletedWords){
                   setError(errorIncompletedWords.message)
-
+          
                   }
-                
+                 
                 else{setIncorrectGuesses((IncompletedWords as GameHistory[])||[])}
 
             const {data:myWords, error:myWordError} = 
                 await supabase
                 .from("words")
-                .select("*")
+                .select("id, word, meaning, examples!words_example_id_fkey(example_standard)")
                 .eq("user_id", session.user.id)
             
                 if(myWordError){
@@ -80,6 +88,7 @@ export default function HistoryPage(){
 
                 }
                 else{setMyWords(myWords || [])}
+                console.log(myWords)
 
 
             setCorrectGuesses((completedWords as GameHistory[])||[])
