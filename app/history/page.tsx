@@ -6,7 +6,16 @@ import { supabase } from '@/app/lib/supabaseClient';
 // import {word} from '@/app/types/database';
 
 interface WordWithExample {id: string, word: string, meaning: string, examples:{example_standard:string}}
-interface GameHistory {id:string, word_id:string, status: boolean, correct_guesses:boolean, words:word|word[]|null } 
+// interface GameHistory {id:string, word_id:string, status: boolean, correct_guesses:boolean, words:word|word[]|null } 
+interface GameHistory {
+  id: string;
+  word_id: string;
+  status: boolean;
+  correct_guesses: boolean;
+  words: WordWithExample | WordWithExample[] | null;
+}
+
+
 interface FailedWord {
   word: string;
 }
@@ -89,6 +98,7 @@ export default function HistoryPage(){
                 }
                 else{setMyWords(myWords || [])}
                 console.log(myWords)
+            
 
 
             setCorrectGuesses((completedWords as GameHistory[])||[])
