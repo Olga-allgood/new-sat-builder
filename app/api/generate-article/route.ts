@@ -30,7 +30,9 @@ const genAIClient = new GoogleGenerativeAI(apiKey);
 
 // Get the Gemini model (using lite version for better quota availability)
 const model = genAIClient.getGenerativeModel({
-model: "gemini-2.5-flash-lite",
+// model: "gemini-3.0-flash-lite",
+// model: "gemini-2.0-flash",
+model: "gemini-2.5-flash",
 });
 
 // Create the prompt
@@ -43,8 +45,8 @@ const wordList = words
 
 const prompt = `You are writing a scientific article. It can be on any topic. It needs to be 70-90 words long.
 
-Vocabulary words to include. They need to be underlined:
-${wordList}
+Vocabulary words to include. You need to take each word that is provided in 
+${wordList} and make it wrapped between ** on both sides of the word in the genrated article
 
 Write the article now:`;
 
