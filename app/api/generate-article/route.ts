@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
+
 export async function POST(request: NextRequest) {
 try {
 // Get the words from request body
