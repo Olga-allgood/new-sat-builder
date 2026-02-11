@@ -5,15 +5,28 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/app/lib/supabaseClient';
 // import {word} from '@/app/types/database';
 
-interface WordWithExample {id: string, word: string, meaning: string, examples:{example_standard:string}}
+interface HistoryWord {  // ✅ NEW
+  word: string;
+  meaning: string;
+}
+
+// interface WordWithExample {id: string, word: string, meaning: string, examples:{example_standard:string}}
 // interface GameHistory {id:string, word_id:string, status: boolean, correct_guesses:boolean, words:word|word[]|null } 
 interface GameHistory {
   id: string;
   word_id: string;
-  status: boolean;
-  correct_guesses: boolean;
-  words: WordWithExample | WordWithExample[] | null;
+  status: boolean | null;
+  correct_guesses: boolean | null;
+  words: HistoryWord | null;   // ✅ SINGLE object
 }
+
+// interface GameHistory {
+//   id: string;
+//   word_id: string;
+//   status: boolean;
+//   correct_guesses: boolean;
+//   words: WordWithExample | WordWithExample[] | null;
+// }
 
 
 interface FailedWord {
@@ -30,23 +43,20 @@ interface LearningArticle {
 
 
 
-function getWordData(words:WordWithExample|WordWithExample[]|null){
-    if(!words){
-        return null
-    }
-    if (Array.isArray(words)){
-        return words[0]|| null
-    }
-    return words
+// function getWordData(words: HistoryWord[] | null){
+//     if (!words || words.length === 0) {
+//     return null;
+// }
+//     return words[0];
 
-}
+// }
 export default function HistoryPage(){
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const [userId, setUserId] = useState('');
     const [correctGuesses, setCorrectGuesses] = useState<GameHistory[]>([]);
     const [incorrectGuesses, setIncorrectGuesses] = useState<GameHistory[]>([]);
-    const [myWords, setMyWords] = useState<WordWithExample[]>([]);
+    const [myWords, setMyWords] = useState<HistoryWord[]>([]);
     const [error, setError] = useState('');
     const [articles, setArticles] = useState<LearningArticle[]>([]);
 
@@ -59,7 +69,7 @@ export default function HistoryPage(){
                 return 
             }
             
-            const {data:completedWords, error: errorCompletedWords} = await supabase.from("game_sessions").select("id, word_id, status, correct_guesses, words(word,meaning)").eq("user_id", session.user.id).eq("status", true).eq("correct_guesses", true);
+            const {data:completedWords, error: errorCompletedWords} = await supabase.from("game_sessions").select("id, word_id, status, correct_guesses,words!game_sessions_word_id_fkey(word,meaning)").eq("user_id", session.user.id).eq("status", true).eq("correct_guesses", true);
 
                 console.log(completedWords)
             if(errorCompletedWords){
@@ -67,12 +77,16 @@ export default function HistoryPage(){
 
             }
             
-            else{setCorrectGuesses((completedWords as GameHistory[])||[])}
+            else{setCorrectGuesses(completedWords ?? [])}
+            
+            // else{setCorrectGuesses((completedWords as GameHistory[])||[])}
 
             const {data:IncompletedWords, error: errorIncompletedWords} = 
                   await supabase
                     .from("game_sessions")
-                    .select("id, user_id, word_id, status, correct_guesses, words(word,meaning)")
+                    // .select("id, user_id, word_id, status, correct_guesses, words(word,meaning)")
+                    .select("id, word_id, status, correct_guesses,words!game_sessions_word_id_fkey(word,meaning)")
+
                     .eq("user_id", session.user.id)
                     .eq("status", true)
                     .eq("correct_guesses", false);
@@ -84,7 +98,9 @@ export default function HistoryPage(){
           
                   }
                  
-                else{setIncorrectGuesses((IncompletedWords as GameHistory[])||[])}
+                else{setIncorrectGuesses(IncompletedWords ?? [])}
+                // else{setIncorrectGuesses((IncompletedWords as GameHistory[])||[])}
+                
 
             const {data:myWords, error:myWordError} = 
                 await supabase
@@ -101,8 +117,8 @@ export default function HistoryPage(){
             
 
 
-            setCorrectGuesses((completedWords as GameHistory[])||[])
-            setIncorrectGuesses((IncompletedWords as GameHistory[])||[])
+            // setCorrectGuesses((completedWords as GameHistory[])||[])
+            // setIncorrectGuesses((IncompletedWords as GameHistory[])||[])
             
             // fetching articles
             const { data: articlesData, error: articlesError } =
@@ -158,10 +174,13 @@ return (
             {correctGuesses.map((item) => (
               <div key={item.id} className="p-2 border-b border-gray-200">
                 <p className="font-medium">
-                  {getWordData(item.words)?.word}
+                  {/* {getWordData(item.words)?.word} */}
+                  {item.words?.word}
+                  
+
                 </p>
                 <p className="text-gray-700">
-                  {getWordData(item.words)?.meaning}
+                  {item.words?.meaning}
                 </p>
               </div>
             ))}
@@ -182,10 +201,11 @@ return (
             {incorrectGuesses.map((item) => (
               <div key={item.id} className="p-2 border-b border-gray-200">
                 <p className="font-medium">
-                  {getWordData(item.words)?.word}
+                  {/* {getWordData(item.words)?.word} */}
+                  {item.words?.word}
                 </p>
                 <p className="text-gray-700">
-                  {getWordData(item.words)?.meaning}
+                  {item.words?.meaning}
                 </p>
               </div>
             ))}
@@ -201,8 +221,8 @@ return (
           <p className="text-gray-500">No words have been added</p>
         ) : (
           <ul className="list-disc list-inside text-gray-700 space-y-1">
-            {myWords.map((item) => (
-              <li key={item.id}>
+            {myWords.map((item, index) => (
+              <li key={index}>
                 <span className="font-medium">{item.word}</span> – {item.meaning}
               </li>
             ))}

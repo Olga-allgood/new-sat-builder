@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/app/lib/supabaseClient'
 
@@ -12,6 +12,18 @@ export default function Signup() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+
+ useEffect(() => {
+  async function checkAuth() {
+    const { data } = await supabase.auth.getSession()
+
+    if (data.session) {
+      router.push('/game')
+    }
+  }
+
+  checkAuth()
+}, [router])
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -37,6 +49,7 @@ export default function Signup() {
         })
         router.push('/game')
       }
+      setLoading(false)
 
       // 3️.Redirect → Header will pick up session
     

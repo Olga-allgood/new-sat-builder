@@ -42,6 +42,8 @@ export default function Header() {
             .select('*', { count: 'exact', head: true })
             .eq('user_id', id)
             .eq('status', true)
+            .eq('correct_guesses', true)
+            console.log(correctCount)
 
 if (!correctError && correctCount !== null) {
   setGuessedWords(correctCount)
@@ -55,6 +57,7 @@ if (!correctError && correctCount !== null) {
             .select('*', { count: 'exact', head: true })
             .eq('user_id', id)
             .eq('status', true)
+            .eq('correct_guesses', false)
 
 if (!incorrectError && incorrectCount !== null) {
   setFailedWords(incorrectCount)
