@@ -20,6 +20,7 @@ interface GameHistory {
   words: HistoryWord | null;   // ✅ SINGLE object
 }
 
+
 // interface GameHistory {
 //   id: string;
 //   word_id: string;
@@ -69,7 +70,7 @@ export default function HistoryPage(){
                 return 
             }
             
-            const {data:completedWords, error: errorCompletedWords} = await supabase.from("game_sessions").select("id, word_id, status, correct_guesses,words!game_sessions_word_id_fkey(word,meaning)").eq("user_id", session.user.id).eq("status", true).eq("correct_guesses", true);
+            const {data:completedWords, error: errorCompletedWords} = await supabase.from("game_sessions").select("id, word_id, status, correct_guesses,words!game_sessions_word_id_fkey(word,meaning)").eq("user_id", session.user.id).eq("status", true).eq("correct_guesses", true).returns<GameHistory[]>();
 
                 console.log(completedWords)
             if(errorCompletedWords){
@@ -78,7 +79,7 @@ export default function HistoryPage(){
             }
             
             else{setCorrectGuesses(completedWords ?? [])}
-            
+
             // else{setCorrectGuesses((completedWords as GameHistory[])||[])}
 
             const {data:IncompletedWords, error: errorIncompletedWords} = 
@@ -89,7 +90,8 @@ export default function HistoryPage(){
 
                     .eq("user_id", session.user.id)
                     .eq("status", true)
-                    .eq("correct_guesses", false);
+                    .eq("correct_guesses", false)
+                    .returns<GameHistory[]>();
                     console.log(IncompletedWords)
                     console.log(correctGuesses)
                     console.log(incorrectGuesses)
