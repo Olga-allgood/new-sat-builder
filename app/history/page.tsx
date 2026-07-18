@@ -1,38 +1,39 @@
 'use client'
-import { useEffect, useState } from 'react';
 
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/app/lib/supabaseClient';
-// import {word} from '@/app/types/database';
 
-interface HistoryWord {  // ✅ NEW
-  word: string;
-  meaning: string;
+
+interface Example {
+  example_standard: string;
+  example_funny: string | null;
 }
 
-// interface WordWithExample {id: string, word: string, meaning: string, examples:{example_standard:string}}
-// interface GameHistory {id:string, word_id:string, status: boolean, correct_guesses:boolean, words:word|word[]|null } 
+interface HistoryWord {
+  id: string;
+  word: string;
+  meaning: string;
+  examples: Example[] | null;
+}
+
+
 interface GameHistory {
   id: string;
   word_id: string;
   status: boolean | null;
   correct_guesses: boolean | null;
-  words: HistoryWord | null;   // ✅ SINGLE object
+  words: {
+    word: string;
+    meaning: string;
+  } | null;
 }
-
-
-// interface GameHistory {
-//   id: string;
-//   word_id: string;
-//   status: boolean;
-//   correct_guesses: boolean;
-//   words: WordWithExample | WordWithExample[] | null;
-// }
 
 
 interface FailedWord {
   word: string;
 }
+
 
 interface LearningArticle {
   id: string;
@@ -43,244 +44,361 @@ interface LearningArticle {
 }
 
 
+export default function HistoryPage() {
 
-// function getWordData(words: HistoryWord[] | null){
-//     if (!words || words.length === 0) {
-//     return null;
-// }
-//     return words[0];
+  const router = useRouter();
 
-// }
-export default function HistoryPage(){
-    const router = useRouter();
-    const [loading, setLoading] = useState(false);
-    const [userId, setUserId] = useState('');
-    const [correctGuesses, setCorrectGuesses] = useState<GameHistory[]>([]);
-    const [incorrectGuesses, setIncorrectGuesses] = useState<GameHistory[]>([]);
-    const [myWords, setMyWords] = useState<HistoryWord[]>([]);
-    const [error, setError] = useState('');
-    const [articles, setArticles] = useState<LearningArticle[]>([]);
-
-    useEffect(()=> {
-        async function FetchGames (){
-            setLoading(true);
-            const {data:{session}} = await supabase.auth.getSession()
-            if (!session){
-                router.push('/login')
-                return 
-            }
-            
-            const {data:completedWords, error: errorCompletedWords} = await supabase.from("game_sessions").select("id, word_id, status, correct_guesses,words!game_sessions_word_id_fkey(word,meaning)").eq("user_id", session.user.id).eq("status", true).eq("correct_guesses", true).returns<GameHistory[]>();
-
-                console.log(completedWords)
-            if(errorCompletedWords){
-              setError(errorCompletedWords.message)
-
-            }
-            
-            else{setCorrectGuesses(completedWords ?? [])}
-
-            // else{setCorrectGuesses((completedWords as GameHistory[])||[])}
-
-            const {data:IncompletedWords, error: errorIncompletedWords} = 
-                  await supabase
-                    .from("game_sessions")
-                    // .select("id, user_id, word_id, status, correct_guesses, words(word,meaning)")
-                    .select("id, word_id, status, correct_guesses,words!game_sessions_word_id_fkey(word,meaning)")
-
-                    .eq("user_id", session.user.id)
-                    .eq("status", true)
-                    .eq("correct_guesses", false)
-                    .returns<GameHistory[]>();
-                    console.log(IncompletedWords)
-                    console.log(correctGuesses)
-                    console.log(incorrectGuesses)
-                  if(errorIncompletedWords){
-                  setError(errorIncompletedWords.message)
-          
-                  }
-                 
-                else{setIncorrectGuesses(IncompletedWords ?? [])}
-                // else{setIncorrectGuesses((IncompletedWords as GameHistory[])||[])}
-                
-
-            const {data:myWords, error:myWordError} = 
-                await supabase
-                .from("words")
-                .select("id, word, meaning, examples!words_example_id_fkey(example_standard)")
-                .eq("user_id", session.user.id)
-            
-                if(myWordError){
-                  setError(myWordError.message)
-
-                }
-                else{setMyWords(myWords || [])}
-                console.log(myWords)
-            
+  const [loading, setLoading] = useState(false);
+  const [correctGuesses, setCorrectGuesses] = useState<GameHistory[]>([]);
+  const [incorrectGuesses, setIncorrectGuesses] = useState<GameHistory[]>([]);
+  const [myWords, setMyWords] = useState<HistoryWord[]>([]);
+  const [error, setError] = useState('');
+  const [articles, setArticles] = useState<LearningArticle[]>([]);
 
 
-            // setCorrectGuesses((completedWords as GameHistory[])||[])
-            // setIncorrectGuesses((IncompletedWords as GameHistory[])||[])
-            
-            // fetching articles
-            const { data: articlesData, error: articlesError } =
-                await supabase
-                  .from("learning_articles")
-                  .select("*")
-                  .eq("user_id", session.user.id)
-                  .order("created_at", { ascending: false });
+  useEffect(() => {
 
-                if (articlesError) {
-                  setError(articlesError.message);
-                } else {
-                  setArticles(articlesData || []);
-                }
+    async function FetchGames() {
 
-            setLoading(false)
+      setLoading(true);
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+
+      // Correct guesses
+      const { data: completedWords, error: errorCompletedWords } =
+        await supabase
+          .from("game_sessions")
+          .select(`
+            id,
+            word_id,
+            status,
+            correct_guesses,
+            words!game_sessions_word_id_fkey(
+              word,
+              meaning
+            )
+          `)
+          .eq("user_id", session.user.id)
+          .eq("status", true)
+          .eq("correct_guesses", true)
+          .returns<GameHistory[]>();
+
+
+      if (errorCompletedWords) {
+        setError(errorCompletedWords.message);
+      } else {
+        setCorrectGuesses(completedWords ?? []);
+      }
+
+
+
+      // Incorrect guesses
+      const { data: incompleteWords, error: errorIncompleteWords } =
+        await supabase
+          .from("game_sessions")
+          .select(`
+            id,
+            word_id,
+            status,
+            correct_guesses,
+            words!game_sessions_word_id_fkey(
+              word,
+              meaning
+            )
+          `)
+          .eq("user_id", session.user.id)
+          .eq("status", true)
+          .eq("correct_guesses", false)
+          .returns<GameHistory[]>();
+
+
+      if (errorIncompleteWords) {
+        setError(errorIncompleteWords.message);
+      } else {
+        setIncorrectGuesses(incompleteWords ?? []);
+      }
+
+
+
+      // All words with examples
+      const { data: wordsData, error: wordsError } =
+        await supabase
+          .from("words")
+          .select(`
+            id,
+            word,
+            meaning,
+            examples!examples_word_id_fkey(
+              example_standard,
+              example_funny
+            )
+          `);
+
+
+      if (wordsError) {
+        setError(wordsError.message);
+      } else {
+        setMyWords(wordsData ?? []);
+      }
+
+
+
+      // Learning Articles
+      const { data: articlesData, error: articlesError } =
+        await supabase
+          .from("learning_articles")
+          .select("*")
+          .eq("user_id", session.user.id)
+          .order("created_at", { ascending: false });
+
+
+      if (articlesError) {
+        setError(articlesError.message);
+      } else {
+        setArticles(articlesData ?? []);
+      }
+
+
+      setLoading(false);
+
+    }
+
+
+    FetchGames();
+
+
+    const { data: { subscription } } =
+      supabase.auth.onAuthStateChange((_event, session) => {
+
+        if (!session) {
+          router.push('/login');
         }
-        FetchGames()
-        const {data:{subscription}} = supabase.auth.onAuthStateChange((_event, session)=> {
-            if (!session){
-                router.push('/login')
-            }
-        
-        })
-        
-        return ()=>subscription.unsubscribe()
-    }, [router])
-     
-     if(error){
-        return (
-            <h2>`There is an error: ${error}`</h2>
-        )
-     }
 
-return (
-  <div className="min-h-screen bg-white px-6 py-8">
-    <div className="max-w-4xl mx-auto space-y-8">
+      });
 
-      <h1 className="text-3xl font-semibold text-[#2d76c0] text-center">
-        Game History
-      </h1>
 
-      {/* Correct guesses */}
-      <div className="bg-gray-50 border border-[#787b80]/30 rounded-md p-4 space-y-2">
-        <h2 className="font-medium text-gray-700">
-          Correct Guesses: {correctGuesses.length}
-        </h2>
+    return () => subscription.unsubscribe();
 
-        {correctGuesses.length === 0 ? (
-          <p className="text-gray-500">No words guessed</p>
-        ) : (
-          <div className="space-y-1">
-            {correctGuesses.map((item) => (
-              <div key={item.id} className="p-2 border-b border-gray-200">
-                <p className="font-medium">
-                  {/* {getWordData(item.words)?.word} */}
-                  {item.words?.word}
-                  
 
-                </p>
-                <p className="text-gray-700">
-                  {item.words?.meaning}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
+  }, [router]);
+
+
+
+  if (error) {
+    return (
+      <h2 className="text-red-600">
+        There is an error: {error}
+      </h2>
+    );
+  }
+
+
+
+  return (
+    <div className="min-h-screen bg-white px-6 py-8">
+
+      <div className="max-w-4xl mx-auto space-y-8">
+
+
+        <h1 className="text-3xl font-semibold text-[#2d76c0] text-center">
+          Game History
+        </h1>
+
+
+
+        {/* Correct Guesses */}
+
+        <div className="bg-gray-50 border rounded-md p-4">
+
+          <h2 className="font-medium text-gray-700">
+            Correct Guesses: {correctGuesses.length}
+          </h2>
+
+
+          {correctGuesses.map(item => (
+
+            <div 
+              key={item.id}
+              className="p-2 border-b"
+            >
+
+              <p className="font-medium">
+                {item.words?.word}
+              </p>
+
+              <p>
+                {item.words?.meaning}
+              </p>
+
+            </div>
+
+          ))}
+
+        </div>
+
+
+
+
+        {/* Incorrect Guesses */}
+
+        <div className="bg-gray-50 border rounded-md p-4">
+
+          <h2 className="font-medium text-gray-700">
+            Incorrect Guesses: {incorrectGuesses.length}
+          </h2>
+
+
+          {incorrectGuesses.map(item => (
+
+            <div 
+              key={item.id}
+              className="p-2 border-b"
+            >
+
+              <p className="font-medium">
+                {item.words?.word}
+              </p>
+
+              <p>
+                {item.words?.meaning}
+              </p>
+
+            </div>
+
+          ))}
+
+        </div>
+
+
+
+
+
+        {/* My Words */}
+
+        <div className="bg-gray-50 border rounded-md p-4">
+
+          <h2 className="font-medium text-gray-700">
+            My Words
+          </h2>
+
+
+          {myWords.length === 0 ? (
+
+            <p className="text-gray-500">
+              No words available
+            </p>
+
+          ) : (
+
+            <ul className="space-y-3 mt-3">
+
+              {myWords.map(word => (
+
+                <li key={word.id}>
+
+                  <p>
+                    <span className="font-medium">
+                      {word.word}
+                    </span>
+                    {" "}– {word.meaning}
+                  </p>
+
+
+                  {word.examples?.map((example,index)=>(
+
+                    <p 
+                      key={index}
+                      className="text-sm text-gray-600 ml-4"
+                    >
+                      Example: {example.example_standard}
+                    </p>
+
+                  ))}
+
+                </li>
+
+              ))}
+
+            </ul>
+
+          )}
+
+        </div>
+
+
+
+
+
+
+        {/* Learning Articles */}
+
+        <section>
+
+          <h2 className="text-lg font-semibold mb-4">
+            📚 Learning Articles
+          </h2>
+
+
+
+          {articles.map(article => (
+
+            <div
+              key={article.id}
+              className="border rounded p-4 mb-4"
+            >
+
+              <p className="text-xs text-gray-500">
+                {article.created_at
+                  ? new Date(article.created_at).toLocaleString()
+                  : "Unknown date"
+                }
+              </p>
+
+
+              <p className="whitespace-pre-wrap mt-2">
+                {article.article}
+              </p>
+
+
+
+              {article.failed_words && (
+
+                <div className="flex gap-2 mt-3 flex-wrap">
+
+                  {article.failed_words.map((word,index)=>(
+
+                    <span
+                      key={index}
+                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs"
+                    >
+                      {word.word}
+                    </span>
+
+                  ))}
+
+                </div>
+
+              )}
+
+
+            </div>
+
+          ))}
+
+
+        </section>
+
+
+
       </div>
-
-      {/* Incorrect guesses */}
-      <div className="bg-gray-50 border border-[#787b80]/30 rounded-md p-4 space-y-2">
-        <h2 className="font-medium text-gray-700">
-          Incorrect Guesses: {incorrectGuesses.length}
-        </h2>
-
-        {incorrectGuesses.length === 0 ? (
-          <p className="text-gray-500">No incorrect guesses</p>
-        ) : (
-          <div className="space-y-1">
-            {incorrectGuesses.map((item) => (
-              <div key={item.id} className="p-2 border-b border-gray-200">
-                <p className="font-medium">
-                  {/* {getWordData(item.words)?.word} */}
-                  {item.words?.word}
-                </p>
-                <p className="text-gray-700">
-                  {item.words?.meaning}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* My Words */}
-      <div className="bg-gray-50 border border-[#787b80]/30 rounded-md p-4 space-y-2">
-        <h2 className="font-medium text-gray-700">My Words</h2>
-
-        {myWords.length === 0 ? (
-          <p className="text-gray-500">No words have been added</p>
-        ) : (
-          <ul className="list-disc list-inside text-gray-700 space-y-1">
-            {myWords.map((item, index) => (
-              <li key={index}>
-                <span className="font-medium">{item.word}</span> – {item.meaning}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Learning Articles */}
-      <section className="mt-8">
-        <h2 className="text-lg font-semibold mb-4">
-          📚 Learning Articles
-        </h2>
-
-        {articles.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            No articles generated yet.
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {articles.map((a) => (
-              <div
-                key={a.id}
-                className="rounded border border-gray-200 p-4 bg-white"
-              >
-                <p className="text-xs text-gray-500 mb-2">
-                  {/* {new Date(a.created_at).toLocaleString()} */}
-                  {a.created_at
-                  ? new Date(a.created_at).toLocaleString()
-                  : 'Unknown date'}
-                </p>
-
-                <p className="whitespace-pre-wrap text-gray-700">
-                  {a.article}
-                </p>
-
-                {a.failed_words && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {a.failed_words.map((w, i) => (
-                      <span
-                        key={i}
-                        className="text-xs px-2 py-1 rounded bg-blue-100 text-blue-700"
-                      >
-                        {w.word}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
 
     </div>
-  </div>
-);
-
-    
+  );
 }

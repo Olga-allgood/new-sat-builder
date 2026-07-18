@@ -51,7 +51,7 @@ export default function GameBoard({userId}: GameBoard) {
         setIsCompleted(false)
         setIsFailed(false)
         
-        const {data: words, error: wordError} = await supabase.from("words").select("*").or(`is_public.eq.true, user_id.eq.${userId}`)
+        const {data: words, error: wordError} = await supabase.from("words").select("*")
         console.log(words, wordError)
         
         if (!words || words.length == 0){
