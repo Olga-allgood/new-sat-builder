@@ -17,15 +17,22 @@ interface HistoryWord {
   examples: Example[] | null;
 }
 
+interface GameWord {
+  word: string;
+  meaning: string;
+}
+
 interface GameHistory {
   id: string;
   word_id: string;
   status: boolean | null;
   correct_guesses: boolean | null;
-  words: {
-    word: string;
-    meaning: string;
-  } | null;
+  words: GameWord | null;
+}
+
+interface PersonalWordRow {
+  word_id: string;
+  words: HistoryWord | null;
 }
 
 interface FailedWord {
@@ -51,8 +58,11 @@ export default function HistoryPage() {
   const [articles, setArticles] = useState<LearningArticle[]>([]);
 
   useEffect(() => {
-    async function FetchGames() {
+    async function fetchGames() {
       setLoading(true);
+      setError('');
+
+      /* ------------------ Get Current Session ------------------ */
 
       const {
         data: { session },
@@ -63,7 +73,9 @@ export default function HistoryPage() {
         return;
       }
 
-      /* ------------------ Correct Guesses ------------------ */
+      /* =========================================================
+         CORRECT GUESSES
+      ========================================================= */
 
       const {
         data: completedWords,
@@ -91,7 +103,9 @@ export default function HistoryPage() {
         setCorrectGuesses(completedWords ?? []);
       }
 
-      /* ------------------ Incorrect Guesses ------------------ */
+      /* =========================================================
+         INCORRECT GUESSES
+      ========================================================= */
 
       const {
         data: incompleteWords,
@@ -119,20 +133,19 @@ export default function HistoryPage() {
         setIncorrectGuesses(incompleteWords ?? []);
       }
 
-      /* ------------------ My Words ------------------ */
+      /* =========================================================
+         MY WORDS
+         
+         words does NOT have user_id.
 
-      /*
-        Personal words are stored in the `words` table.
+         Instead:
 
-        The connection between the learner and the word
-        is stored in `game_sessions`:
-
-        game_sessions.user_id
-                  ↓
-        game_sessions.word_id
-                  ↓
-              words.id
-      */
+         game_sessions.user_id
+                ↓
+         game_sessions.word_id
+                ↓
+             words.id
+      ========================================================= */
 
       const {
         data: wordsData,
@@ -153,26 +166,40 @@ export default function HistoryPage() {
           )
         `)
         .eq('user_id', session.user.id)
-        .eq('words.is_public', false);
+        .returns<PersonalWordRow[]>();
 
       if (wordsError) {
         setError(wordsError.message);
       } else {
         /*
-          A learner might have more than one game session
-          for the same word, so remove duplicates.
+          We only want personal words.
+
+          Because `words` has is_public = false
+          for learner-created words, we filter here.
+
+          We also use a Map to remove duplicate words
+          because one word can have multiple game sessions.
         */
 
-        const personalWords = Array.from(
-          new Map(
-            (wordsData ?? [])
-              .map((item) => item.words)
-              .filter(
-                (word): word is HistoryWord => word !== null
-              )
-              .map((word) => [word.id, word])
-          ).values()
-        );
+        const wordMap = new Map<string, HistoryWord>();
+
+        for (const item of wordsData ?? []) {
+          const word = item.words;
+
+          if (!word) {
+            continue;
+          }
+
+          if (word.is_public !== false) {
+            continue;
+          }
+
+          if (!wordMap.has(word.id)) {
+            wordMap.set(word.id, word);
+          }
+        }
+
+        const personalWords = Array.from(wordMap.values());
 
         personalWords.sort((a, b) =>
           a.word.localeCompare(b.word)
@@ -181,7 +208,9 @@ export default function HistoryPage() {
         setMyWords(personalWords);
       }
 
-      /* ------------------ Learning Articles ------------------ */
+      /* =========================================================
+         LEARNING ARTICLES
+      ========================================================= */
 
       const {
         data: articlesData,
@@ -190,7 +219,9 @@ export default function HistoryPage() {
         .from('learning_articles')
         .select('*')
         .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', {
+          ascending: false,
+        });
 
       if (articlesError) {
         setError(articlesError.message);
@@ -201,9 +232,11 @@ export default function HistoryPage() {
       setLoading(false);
     }
 
-    FetchGames();
+    fetchGames();
 
-    /* ------------------ Auth Listener ------------------ */
+    /* =========================================================
+       AUTH LISTENER
+    ========================================================= */
 
     const {
       data: { subscription },
@@ -213,10 +246,14 @@ export default function HistoryPage() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [router]);
 
-  /* ------------------ Error ------------------ */
+  /* =========================================================
+     ERROR
+  ========================================================= */
 
   if (error) {
     return (
@@ -228,7 +265,9 @@ export default function HistoryPage() {
     );
   }
 
-  /* ------------------ Loading ------------------ */
+  /* =========================================================
+     LOADING
+  ========================================================= */
 
   if (loading) {
     return (
@@ -240,16 +279,20 @@ export default function HistoryPage() {
     );
   }
 
-  /* ------------------ Page ------------------ */
+  /* =========================================================
+     PAGE
+  ========================================================= */
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-8 p-6">
 
       <h1 className="text-3xl font-semibold text-[#2d76c0] text-center">
         Game History
       </h1>
 
-      {/* ------------------ Correct Guesses ------------------ */}
+      {/* =====================================================
+          CORRECT GUESSES
+      ===================================================== */}
 
       <div className="bg-gray-50 border rounded-md p-4">
 
@@ -258,29 +301,43 @@ export default function HistoryPage() {
         </h2>
 
         {correctGuesses.length === 0 ? (
+
           <p className="text-gray-500 mt-3">
             No correct guesses yet.
           </p>
-        ) : (
-          correctGuesses.map((item) => (
-            <div
-              key={item.id}
-              className="p-2 border-b"
-            >
-              <p className="font-medium">
-                {item.words?.word}
-              </p>
 
-              <p>
-                {item.words?.meaning}
-              </p>
-            </div>
-          ))
+        ) : (
+
+          <div className="mt-3">
+
+            {correctGuesses.map((item) => (
+
+              <div
+                key={item.id}
+                className="p-2 border-b"
+              >
+
+                <p className="font-medium">
+                  {item.words?.word}
+                </p>
+
+                <p>
+                  {item.words?.meaning}
+                </p>
+
+              </div>
+
+            ))}
+
+          </div>
+
         )}
 
       </div>
 
-      {/* ------------------ Incorrect Guesses ------------------ */}
+      {/* =====================================================
+          INCORRECT GUESSES
+      ===================================================== */}
 
       <div className="bg-gray-50 border rounded-md p-4">
 
@@ -289,29 +346,43 @@ export default function HistoryPage() {
         </h2>
 
         {incorrectGuesses.length === 0 ? (
+
           <p className="text-gray-500 mt-3">
             No incorrect guesses yet.
           </p>
-        ) : (
-          incorrectGuesses.map((item) => (
-            <div
-              key={item.id}
-              className="p-2 border-b"
-            >
-              <p className="font-medium">
-                {item.words?.word}
-              </p>
 
-              <p>
-                {item.words?.meaning}
-              </p>
-            </div>
-          ))
+        ) : (
+
+          <div className="mt-3">
+
+            {incorrectGuesses.map((item) => (
+
+              <div
+                key={item.id}
+                className="p-2 border-b"
+              >
+
+                <p className="font-medium">
+                  {item.words?.word}
+                </p>
+
+                <p>
+                  {item.words?.meaning}
+                </p>
+
+              </div>
+
+            ))}
+
+          </div>
+
         )}
 
       </div>
 
-      {/* ------------------ My Words ------------------ */}
+      {/* =====================================================
+          MY WORDS
+      ===================================================== */}
 
       <div className="bg-gray-50 border rounded-md p-4">
 
@@ -320,13 +391,17 @@ export default function HistoryPage() {
         </h2>
 
         {myWords.length === 0 ? (
+
           <p className="text-gray-500 mt-3">
             No words available.
           </p>
+
         ) : (
+
           <ul className="space-y-3 mt-3">
 
             {myWords.map((word) => (
+
               <li
                 key={word.id}
                 className="border-b pb-3"
@@ -341,23 +416,29 @@ export default function HistoryPage() {
                 </p>
 
                 {word.examples?.map((example, index) => (
+
                   <p
                     key={index}
                     className="text-sm text-gray-600 ml-4 mt-1"
                   >
                     Example: {example.example_standard}
                   </p>
+
                 ))}
 
               </li>
+
             ))}
 
           </ul>
+
         )}
 
       </div>
 
-      {/* ------------------ Learning Articles ------------------ */}
+      {/* =====================================================
+          LEARNING ARTICLES
+      ===================================================== */}
 
       <section>
 
@@ -366,11 +447,15 @@ export default function HistoryPage() {
         </h2>
 
         {articles.length === 0 ? (
+
           <p className="text-gray-500">
             No learning articles yet.
           </p>
+
         ) : (
+
           articles.map((article) => (
+
             <div
               key={article.id}
               className="border rounded p-4 mb-4"
@@ -378,7 +463,9 @@ export default function HistoryPage() {
 
               <p className="text-xs text-gray-500">
                 {article.created_at
-                  ? new Date(article.created_at).toLocaleString()
+                  ? new Date(
+                      article.created_at
+                    ).toLocaleString()
                   : 'Unknown date'
                 }
               </p>
@@ -387,23 +474,38 @@ export default function HistoryPage() {
                 {article.article}
               </p>
 
-              {article.failed_words && (
+              {article.failed_words &&
+                article.failed_words.length > 0 && (
+
                 <div className="flex gap-2 mt-3 flex-wrap">
 
-                  {article.failed_words.map((word, index) => (
+                  {article.failed_words.map(
+                    (word, index) => (
+
                     <span
                       key={index}
-                      className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs"
+                      className="
+                        bg-blue-100
+                        text-blue-700
+                        px-2
+                        py-1
+                        rounded
+                        text-xs
+                      "
                     >
                       {word.word}
                     </span>
+
                   ))}
 
                 </div>
+
               )}
 
             </div>
+
           ))
+
         )}
 
       </section>
