@@ -1,9 +1,11 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/app/lib/supabaseClient';
 import { word_with_examples } from '@/app/types/database';
 import WordCard from './WordCard';
+import AlphabetButtons from './AlphabetButtons';
 import CompleteDisplay from './CompleteDisplay';
 import PersonalWordForm from './PersonalWordForm';
 import { useRouter } from 'next/navigation';
@@ -62,7 +64,8 @@ export default function GameBoard({ userId }: GameBoardProps) {
     word: string,
     guessed: Set<string>
   ) {
-    const wordLetters = word.toUpperCase().split('');
+    const wordLetters =
+      word.toUpperCase().split('');
 
     for (const letter of wordLetters) {
       if (!guessed.has(letter)) {
@@ -89,9 +92,6 @@ export default function GameBoard({ userId }: GameBoardProps) {
 
     /*
       1. Get the currently authenticated user.
-
-      We use the authenticated Supabase user instead
-      of relying only on the userId prop.
     */
     const {
       data: { user },
@@ -115,8 +115,6 @@ export default function GameBoard({ userId }: GameBoardProps) {
 
     /*
       2. Check the user's profile.
-
-      game_sessions.user_id references profiles.id.
     */
     const {
       data: profile,
@@ -145,9 +143,6 @@ export default function GameBoard({ userId }: GameBoardProps) {
 
     /*
       3. Get active words.
-
-      Your 50 SAT words should have:
-      is_active = true
     */
     const {
       data: words,
@@ -217,10 +212,6 @@ export default function GameBoard({ userId }: GameBoardProps) {
 
     /*
       7. Create game session.
-
-      IMPORTANT:
-      Use user.id because game_sessions.user_id
-      references profiles.id.
     */
     const {
       data: session,
@@ -260,14 +251,165 @@ export default function GameBoard({ userId }: GameBoardProps) {
   }, []);
 
   /*
-    Keyboard input.
+    Main guessing function.
+
+    Both the physical keyboard and the
+    on-screen keyboard use this function.
   */
-  useEffect(() => {
-    async function handleKeyPress(e: KeyboardEvent) {
-      const target = e.target as HTMLElement;
+  async function handleGuess(letter: string) {
+    if (
+      isCompleted ||
+      isFailed ||
+      loading ||
+      !currentWord
+    ) {
+      return;
+    }
+
+    const upperLetter = letter.toUpperCase();
+
+    /*
+      Ignore letters already tried.
+    */
+    if (
+      guessedLetters.has(upperLetter) ||
+      incorrectGuesses.includes(upperLetter)
+    ) {
+      return;
+    }
+
+    /*
+      Correct guess.
+    */
+    if (
+      currentWord.word
+        .toUpperCase()
+        .includes(upperLetter)
+    ) {
+      const newGuess =
+        new Set(guessedLetters);
+
+      newGuess.add(upperLetter);
+
+      setGuessedLetters(newGuess);
 
       /*
-        Don't capture keyboard input from forms.
+        Check whether the entire word
+        has been guessed.
+      */
+      if (
+        isComplete(
+          currentWord.word,
+          newGuess
+        )
+      ) {
+        setIsCompleted(true);
+
+        if (sessionId) {
+          const {
+            error: updateError,
+          } = await supabase
+            .from('game_sessions')
+            .update({
+              status: true,
+              correct_guesses: true,
+            })
+            .eq('id', sessionId);
+
+          if (updateError) {
+            setError(
+              `Could not update game session: ${updateError.message}`
+            );
+          }
+        }
+
+        window.dispatchEvent(
+          new Event('wordCompleted')
+        );
+      }
+    }
+
+    /*
+      Incorrect guess.
+    */
+    else {
+      const MAX_GUESSES =
+        currentWord.word.length + 3;
+
+      const newIncorrectGuesses = [
+        ...incorrectGuesses,
+        upperLetter,
+      ];
+
+      setIncorrectGuesses(
+        newIncorrectGuesses
+      );
+
+      /*
+        Player failed the word.
+      */
+      if (
+        newIncorrectGuesses.length >=
+        MAX_GUESSES
+      ) {
+        setIsFailed(true);
+
+        if (sessionId) {
+          const {
+            error: updateError,
+          } = await supabase
+            .from('game_sessions')
+            .update({
+              status: true,
+              correct_guesses: false,
+            })
+            .eq('id', sessionId);
+
+          if (updateError) {
+            setError(
+              `Could not update game session: ${updateError.message}`
+            );
+          }
+        }
+
+        /*
+          Add failed word to article-generation list.
+
+          Keep only the last 5 failed words.
+        */
+        setFailedWords((prev) => {
+          const newFailed = [
+            ...prev,
+            {
+              word: currentWord.word,
+              definition: currentWord.meaning,
+            },
+          ];
+
+          return newFailed.slice(-5);
+        });
+
+        window.dispatchEvent(
+          new Event('wordFailed')
+        );
+      }
+    }
+  }
+
+  /*
+    Physical keyboard input.
+
+    This uses the same handleGuess()
+    function as the on-screen keyboard.
+  */
+  useEffect(() => {
+    function handleKeyPress(e: KeyboardEvent) {
+      const target =
+        e.target as HTMLElement;
+
+      /*
+        Don't capture keyboard input
+        from forms.
       */
       if (
         target.tagName === 'INPUT' ||
@@ -281,7 +423,9 @@ export default function GameBoard({ userId }: GameBoardProps) {
         Only accept letters.
       */
       if (!/^[a-zA-Z]$/.test(e.key)) {
-        setError('You need to choose a letter');
+        setError(
+          'You need to choose a letter'
+        );
 
         setTimeout(() => {
           setError('');
@@ -290,145 +434,7 @@ export default function GameBoard({ userId }: GameBoardProps) {
         return;
       }
 
-      /*
-        Don't process guesses if the game isn't ready.
-      */
-      if (
-        isCompleted ||
-        isFailed ||
-        loading ||
-        !currentWord
-      ) {
-        return;
-      }
-
-      const letter = e.key.toUpperCase();
-
-      /*
-        Ignore letters already tried.
-      */
-      if (
-        guessedLetters.has(letter) ||
-        incorrectGuesses.includes(letter)
-      ) {
-        return;
-      }
-
-      /*
-        Correct guess.
-      */
-      if (
-        currentWord.word
-          .toUpperCase()
-          .includes(letter)
-      ) {
-        const newGuess = new Set(guessedLetters);
-
-        newGuess.add(letter);
-
-        setGuessedLetters(newGuess);
-
-        /*
-          Check whether the entire word
-          has been guessed.
-        */
-        if (
-          isComplete(
-            currentWord.word,
-            newGuess
-          )
-        ) {
-          setIsCompleted(true);
-
-          if (sessionId) {
-            const {
-              error: updateError,
-            } = await supabase
-              .from('game_sessions')
-              .update({
-                status: true,
-                correct_guesses: true,
-              })
-              .eq('id', sessionId);
-
-            if (updateError) {
-              setError(
-                `Could not update game session: ${updateError.message}`
-              );
-            }
-          }
-
-          window.dispatchEvent(
-            new Event('wordCompleted')
-          );
-        }
-      }
-
-      /*
-        Incorrect guess.
-      */
-      else {
-        const MAX_GUESSES =
-          currentWord.word.length + 3;
-
-        const newIncorrectGuesses = [
-          ...incorrectGuesses,
-          letter,
-        ];
-
-        setIncorrectGuesses(
-          newIncorrectGuesses
-        );
-
-        /*
-          Player failed the word.
-        */
-        if (
-          newIncorrectGuesses.length >=
-          MAX_GUESSES
-        ) {
-          setIsFailed(true);
-
-          if (sessionId) {
-            const {
-              error: updateError,
-            } = await supabase
-              .from('game_sessions')
-              .update({
-                status: true,
-                correct_guesses: false,
-              })
-              .eq('id', sessionId);
-
-            if (updateError) {
-              setError(
-                `Could not update game session: ${updateError.message}`
-              );
-            }
-          }
-
-          /*
-            Add failed word to article-generation list.
-
-            Keep only the last 5 failed words.
-          */
-          setFailedWords((prev) => {
-            const newFailed = [
-              ...prev,
-              {
-                word: currentWord.word,
-                definition: currentWord.meaning,
-              },
-            ];
-
-            return newFailed.slice(-5);
-          });
-
-          window.dispatchEvent(
-            new Event('wordFailed')
-          );
-        }
-      }
+      handleGuess(e.key);
     }
 
     window.addEventListener(
@@ -471,16 +477,14 @@ export default function GameBoard({ userId }: GameBoardProps) {
   */
   if (!currentWord) {
     return (
-      <div className="py-8 text-center">
+      <div className="w-full">
         {loading ? (
-          <p className="text-gray-600">
+          <div className="text-center py-8">
             Loading word...
-          </p>
+          </div>
         ) : (
-          <div>
-            <p className="text-red-600">
-              No words to guess.
-            </p>
+          <div className="text-center py-8">
+            <p>No words to guess.</p>
 
             {error && (
               <p className="mt-2 text-sm text-red-500">
@@ -501,10 +505,10 @@ export default function GameBoard({ userId }: GameBoardProps) {
   }
 
   return (
-    <div>
+    <div className="w-full">
       {/* Error */}
       {error && (
-        <p className="mb-4 text-red-600 text-sm font-medium">
+        <p className="mb-4 text-center text-sm text-red-500">
           {error}
         </p>
       )}
@@ -529,6 +533,16 @@ export default function GameBoard({ userId }: GameBoardProps) {
             }
             meaning={currentWord.meaning}
           />
+
+          {/* On-screen keyboard */}
+          {!isCompleted && !isFailed && (
+            <div className="mt-6">
+              <AlphabetButtons
+                guessedLetters={guessedLetters}
+                onGuess={handleGuess}
+              />
+            </div>
+          )}
 
           {/* Completion panel */}
           {(isCompleted || isFailed) && (
@@ -636,7 +650,9 @@ export default function GameBoard({ userId }: GameBoardProps) {
           {(isCompleted || isFailed) && (
             <button
               onClick={() =>
-                speakWord(currentWord.word)
+                speakWord(
+                  currentWord.word
+                )
               }
               className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-[#009CDE] text-[#009CDE] font-medium hover:bg-[#009CDE] hover:text-white transition"
             >
@@ -658,8 +674,8 @@ export default function GameBoard({ userId }: GameBoardProps) {
           </button>
 
         </aside>
-
       </div>
     </div>
   );
 }
+
