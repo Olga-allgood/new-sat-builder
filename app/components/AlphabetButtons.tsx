@@ -1,3 +1,4 @@
+
 type AlphabetButtonsProps = {
   guessedLetters: Set<string>;
   onGuess: (letter: string) => void;
@@ -21,23 +22,25 @@ export default function AlphabetButtons({
           className="flex justify-center gap-1.5 sm:gap-2 mb-2"
         >
           {row.map((letter) => {
-            const guessed = guessedLetters.has(
-              letter.toUpperCase()
-            );
+            const guessed =
+              guessedLetters.has(letter);
 
             return (
               <button
                 key={letter}
+                type="button"
                 onClick={() => onGuess(letter)}
                 disabled={guessed}
                 className={`
-                  flex-1
-                  max-w-[42px]
-                  aspect-square
-                  rounded-lg
+                  w-8 h-11
+                  sm:w-10 sm:h-12
+                  md:w-11 md:h-12
+                  shrink-0
+                  rounded-md
                   font-semibold
                   text-sm sm:text-base
                   transition
+                  touch-manipulation
                   ${
                     guessed
                       ? 'bg-gray-300 text-gray-500'
@@ -54,3 +57,4 @@ export default function AlphabetButtons({
     </div>
   );
 }
+
