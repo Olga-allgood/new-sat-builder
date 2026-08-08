@@ -23,6 +23,7 @@ export default function PersonalWordForm({
     setSuccessMessage('');
 
     if (!word.trim() || !meaning.trim()) {
+      setError('Please enter both a word and a meaning.');
       return;
     }
 
@@ -40,7 +41,7 @@ export default function PersonalWordForm({
 
     console.log('Authenticated user:', user.id);
 
-    /* ------------------ 2. Insert word ------------------ */
+    /* ------------------ 2. Insert personal word ------------------ */
 
     const {
       data: wordData,
@@ -50,7 +51,15 @@ export default function PersonalWordForm({
       .insert({
         word: word.trim(),
         meaning: meaning.trim(),
+
+        // This word belongs only to this user
+        user_id: user.id,
+
+        // Personal word
         is_public: false,
+
+        // Available for this user's games
+        is_active: true,
       })
       .select()
       .single();
@@ -65,11 +74,13 @@ export default function PersonalWordForm({
       return;
     }
 
-    console.log('Word created:', wordData);
+    console.log('Personal word created:', wordData);
 
     /* ------------------ 3. Create game session ------------------ */
 
-    const { error: sessionError } = await supabase
+    const {
+      error: sessionError,
+    } = await supabase
       .from('game_sessions')
       .insert({
         user_id: user.id,
@@ -90,7 +101,7 @@ export default function PersonalWordForm({
 
     /* ------------------ 4. Success ------------------ */
 
-    setSuccessMessage(`"${word}" has been added`);
+    setSuccessMessage(`"${word.trim()}" has been added`);
 
     setWord('');
     setMeaning('');

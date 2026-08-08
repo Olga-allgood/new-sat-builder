@@ -14,6 +14,8 @@ interface HistoryWord {
   word: string;
   meaning: string;
   is_public: boolean | null;
+  is_active: boolean | null;
+  user_id: string | null;
   examples: Example[] | null;
 }
 
@@ -28,11 +30,6 @@ interface GameHistory {
   status: boolean | null;
   correct_guesses: boolean | null;
   words: GameWord | null;
-}
-
-interface PersonalWordRow {
-  word_id: string;
-  words: HistoryWord | null;
 }
 
 interface FailedWord {
@@ -70,8 +67,11 @@ export default function HistoryPage() {
 
       if (!session) {
         router.push('/login');
+        setLoading(false);
         return;
       }
+
+      const userId = session.user.id;
 
       /* =========================================================
          CORRECT GUESSES
@@ -92,7 +92,7 @@ export default function HistoryPage() {
             meaning
           )
         `)
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
         .eq('status', true)
         .eq('correct_guesses', true)
         .returns<GameHistory[]>();
@@ -122,7 +122,7 @@ export default function HistoryPage() {
             meaning
           )
         `)
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
         .eq('status', true)
         .eq('correct_guesses', false)
         .returns<GameHistory[]>();
@@ -135,77 +135,40 @@ export default function HistoryPage() {
 
       /* =========================================================
          MY WORDS
-         
-         words does NOT have user_id.
 
-         Instead:
+         Personal words now belong directly to the user through:
 
-         game_sessions.user_id
-                ↓
-         game_sessions.word_id
-                ↓
-             words.id
+         words.user_id
+
+         We no longer need to find personal words through
+         game_sessions.
       ========================================================= */
 
       const {
         data: wordsData,
         error: wordsError,
       } = await supabase
-        .from('game_sessions')
+        .from('words')
         .select(`
-          word_id,
-          words!game_sessions_word_id_fkey(
-            id,
-            word,
-            meaning,
-            is_public,
-            examples!examples_word_id_fkey(
-              example_standard,
-              example_funny
-            )
+          id,
+          word,
+          meaning,
+          is_public,
+          is_active,
+          user_id,
+          examples!examples_word_id_fkey(
+            example_standard,
+            example_funny
           )
         `)
-        .eq('user_id', session.user.id)
-        .returns<PersonalWordRow[]>();
+        .eq('user_id', userId)
+        .eq('is_public', false)
+        .order('word');
 
       if (wordsError) {
         setError(wordsError.message);
       } else {
-        /*
-          We only want personal words.
-
-          Because `words` has is_public = false
-          for learner-created words, we filter here.
-
-          We also use a Map to remove duplicate words
-          because one word can have multiple game sessions.
-        */
-
-        const wordMap = new Map<string, HistoryWord>();
-
-        for (const item of wordsData ?? []) {
-          const word = item.words;
-
-          if (!word) {
-            continue;
-          }
-
-          if (word.is_public !== false) {
-            continue;
-          }
-
-          if (!wordMap.has(word.id)) {
-            wordMap.set(word.id, word);
-          }
-        }
-
-        const personalWords = Array.from(wordMap.values());
-
-        personalWords.sort((a, b) =>
-          a.word.localeCompare(b.word)
-        );
-
-        setMyWords(personalWords);
+        setMyWords(wordsData ?? []);
       }
 
       /* =========================================================
@@ -218,7 +181,7 @@ export default function HistoryPage() {
       } = await supabase
         .from('learning_articles')
         .select('*')
-        .eq('user_id', session.user.id)
+        .eq('user_id', userId)
         .order('created_at', {
           ascending: false,
         });
@@ -257,7 +220,7 @@ export default function HistoryPage() {
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
+      <div className="p-6">
         <p className="text-red-600">
           There is an error: {error}
         </p>
@@ -271,10 +234,8 @@ export default function HistoryPage() {
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto p-6">
-        <p className="text-gray-500">
-          Loading history...
-        </p>
+      <div className="p-6">
+        <p>Loading history...</p>
       </div>
     );
   }
@@ -284,7 +245,7 @@ export default function HistoryPage() {
   ========================================================= */
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 p-6">
+    <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
 
       <h1 className="text-3xl font-semibold text-[#2d76c0] text-center">
         Game History
