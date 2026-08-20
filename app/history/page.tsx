@@ -67,20 +67,40 @@ export default function HistoryPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
-
   const [correctGuesses, setCorrectGuesses] =
     useState<GameHistory[]>([]);
-
   const [incorrectGuesses, setIncorrectGuesses] =
     useState<GameHistory[]>([]);
-
   const [myWords, setMyWords] =
     useState<HistoryWord[]>([]);
-
   const [articles, setArticles] =
     useState<LearningArticle[]>([]);
-
   const [error, setError] = useState("");
+
+  /*
+   * Shared styling for history items.
+   * This keeps all four sections visually consistent.
+   */
+  const historyItemStyle = {
+    background: "#e6f4ff",
+    border: "1px solid #91caff",
+    borderRadius: 10,
+    padding: "16px",
+  };
+
+  const wordStyle = {
+    fontSize: 18,
+    fontWeight: 700,
+    color: "#0958d9",
+  };
+
+  const definitionStyle = {
+    marginTop: 6,
+    marginBottom: 0,
+    fontSize: 17,
+    lineHeight: 1.7,
+    color: "#1f1f1f",
+  };
 
   useEffect(() => {
     async function fetchHistory() {
@@ -92,7 +112,7 @@ export default function HistoryPage() {
       } = await supabase.auth.getSession();
 
       if (!session) {
-        router.push("/login");
+        router.replace("/login");
         setLoading(false);
         return;
       }
@@ -209,7 +229,7 @@ export default function HistoryPage() {
     } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         if (!session) {
-          router.push("/login");
+          router.replace("/login");
         }
       }
     );
@@ -230,9 +250,9 @@ export default function HistoryPage() {
       >
         <Alert
           type="error"
-          showIcon
-          message="Unable to load history"
+          title="Unable to load history"
           description={error}
+          showIcon
         />
       </div>
     );
@@ -287,10 +307,7 @@ export default function HistoryPage() {
 
         {/* SUMMARY */}
 
-        <Flex
-          wrap="wrap"
-          gap={12}
-        >
+        <Flex wrap="wrap" gap={12}>
           <Card
             style={{
               flex: "1 1 180px",
@@ -299,9 +316,7 @@ export default function HistoryPage() {
             <Statistic
               title="Correct"
               value={correctGuesses.length}
-              prefix={
-                <CheckCircleOutlined />
-              }
+              prefix={<CheckCircleOutlined />}
             />
           </Card>
 
@@ -313,9 +328,7 @@ export default function HistoryPage() {
             <Statistic
               title="Incorrect"
               value={incorrectGuesses.length}
-              prefix={
-                <CloseCircleOutlined />
-              }
+              prefix={<CloseCircleOutlined />}
             />
           </Card>
 
@@ -339,9 +352,7 @@ export default function HistoryPage() {
             <Statistic
               title="Learning Articles"
               value={articles.length}
-              prefix={
-                <FileTextOutlined />
-              }
+              prefix={<FileTextOutlined />}
             />
           </Card>
         </Flex>
@@ -357,9 +368,7 @@ export default function HistoryPage() {
             >
               <CheckCircleOutlined />
 
-              <span>
-                Correct Guesses
-              </span>
+              <span>Correct Guesses</span>
 
               <Tag color="green">
                 {correctGuesses.length}
@@ -374,34 +383,27 @@ export default function HistoryPage() {
           ) : (
             <Space
               orientation="vertical"
-              size="small"
+              size="middle"
               style={{
                 width: "100%",
               }}
             >
-              {correctGuesses.map(
-                (item) => (
-                  <Card
-                    key={item.id}
-                    size="small"
-                  >
-                    <Text strong>
-                      {item.words?.word}
-                    </Text>
+              {correctGuesses.map((item) => (
+                <div
+                  key={item.id}
+                  style={historyItemStyle}
+                >
+                  <Text style={wordStyle}>
+                    {item.words?.word}
+                  </Text>
 
-                    <Paragraph
-                      type="secondary"
-                      style={{
-                        marginTop: 4,
-                        marginBottom: 0,
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {item.words?.meaning}
-                    </Paragraph>
-                  </Card>
-                )
-              )}
+                  <Paragraph
+                    style={definitionStyle}
+                  >
+                    {item.words?.meaning}
+                  </Paragraph>
+                </div>
+              ))}
             </Space>
           )}
         </Card>
@@ -417,14 +419,10 @@ export default function HistoryPage() {
             >
               <CloseCircleOutlined />
 
-              <span>
-                Incorrect Guesses
-              </span>
+              <span>Incorrect Guesses</span>
 
               <Tag color="red">
-                {
-                  incorrectGuesses.length
-                }
+                {incorrectGuesses.length}
               </Tag>
             </Flex>
           }
@@ -436,34 +434,27 @@ export default function HistoryPage() {
           ) : (
             <Space
               orientation="vertical"
-              size="small"
+              size="middle"
               style={{
                 width: "100%",
               }}
             >
-              {incorrectGuesses.map(
-                (item) => (
-                  <Card
-                    key={item.id}
-                    size="small"
-                  >
-                    <Text strong>
-                      {item.words?.word}
-                    </Text>
+              {incorrectGuesses.map((item) => (
+                <div
+                  key={item.id}
+                  style={historyItemStyle}
+                >
+                  <Text style={wordStyle}>
+                    {item.words?.word}
+                  </Text>
 
-                    <Paragraph
-                      type="secondary"
-                      style={{
-                        marginTop: 4,
-                        marginBottom: 0,
-                        lineHeight: 1.6,
-                      }}
-                    >
-                      {item.words?.meaning}
-                    </Paragraph>
-                  </Card>
-                )
-              )}
+                  <Paragraph
+                    style={definitionStyle}
+                  >
+                    {item.words?.meaning}
+                  </Paragraph>
+                </div>
+              ))}
             </Space>
           )}
         </Card>
@@ -479,9 +470,7 @@ export default function HistoryPage() {
             >
               <BookOutlined />
 
-              <span>
-                My Words
-              </span>
+              <span>My Words</span>
 
               <Tag>
                 {myWords.length}
@@ -496,62 +485,66 @@ export default function HistoryPage() {
           ) : (
             <Space
               orientation="vertical"
-              size="small"
+              size="middle"
               style={{
                 width: "100%",
               }}
             >
               {myWords.map((word) => (
-                <Card
+                <div
                   key={word.id}
-                  size="small"
+                  style={historyItemStyle}
                 >
-                  <Space
-                    orientation="vertical"
-                    size="small"
-                    style={{
-                      width: "100%",
-                    }}
+                  <Text style={wordStyle}>
+                    {word.word}
+                  </Text>
+
+                  <Paragraph
+                    style={definitionStyle}
                   >
-                    <div>
-                      <Text strong>
-                        {word.word}
-                      </Text>
+                    {word.meaning}
+                  </Paragraph>
 
-                      <Text>
-                        {" "}
-                        — {word.meaning}
-                      </Text>
-                    </div>
-
-                    {word.examples
-                      ?.filter(
-                        (example) =>
-                          example.example_standard
-                      )
-                      .map(
-                        (
-                          example,
-                          index
-                        ) => (
-                          <Paragraph
-                            key={index}
-                            type="secondary"
+                  {word.examples
+                    ?.filter(
+                      (example) =>
+                        example.example_standard
+                    )
+                    .map(
+                      (example, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            marginTop: 12,
+                            paddingTop: 12,
+                            borderTop:
+                              "1px solid #91caff",
+                          }}
+                        >
+                          <Text
+                            strong
                             style={{
-                              margin: 0,
-                              paddingLeft: 12,
-                              lineHeight: 1.6,
+                              fontSize: 16,
+                              color: "#0958d9",
                             }}
                           >
-                            Example:{" "}
+                            Example
+                          </Text>
+
+                          <Paragraph
+                            style={{
+                              ...definitionStyle,
+                              fontSize: 16,
+                            }}
+                          >
                             {
                               example.example_standard
                             }
                           </Paragraph>
-                        )
-                      )}
-                  </Space>
-                </Card>
+                        </div>
+                      )
+                    )}
+                </div>
               ))}
             </Space>
           )}
@@ -585,81 +578,92 @@ export default function HistoryPage() {
           ) : (
             <Space
               orientation="vertical"
-              size="middle"
+              size="large"
               style={{
                 width: "100%",
               }}
             >
-              {articles.map(
-                (article) => (
-                  <Card
-                    key={article.id}
-                    size="small"
+              {articles.map((article) => (
+                <div
+                  key={article.id}
+                  style={historyItemStyle}
+                >
+                  <Text
+                    strong
+                    style={{
+                      fontSize: 16,
+                      color: "#0958d9",
+                    }}
                   >
-                    <Space
-                      orientation="vertical"
-                      size="middle"
+                    Learning Article
+                  </Text>
+
+                  <div
+                    style={{
+                      marginTop: 4,
+                    }}
+                  >
+                    <Text
+                      type="secondary"
                       style={{
-                        width: "100%",
+                        fontSize: 13,
                       }}
                     >
-                      <Text
-                        type="secondary"
+                      {article.created_at
+                        ? new Date(
+                            article.created_at
+                          ).toLocaleString()
+                        : "Unknown date"}
+                    </Text>
+                  </div>
+
+                  <Paragraph
+                    style={{
+                      marginTop: 12,
+                      marginBottom: 0,
+                      fontSize: 17,
+                      lineHeight: 1.75,
+                      color: "#1f1f1f",
+                      whiteSpace: "pre-wrap",
+                      overflowWrap: "anywhere",
+                    }}
+                  >
+                    {article.article}
+                  </Paragraph>
+
+                  {article.failed_words &&
+                    article.failed_words.length >
+                      0 && (
+                      <Flex
+                        wrap="wrap"
+                        gap={6}
                         style={{
-                          fontSize: 12,
+                          marginTop: 14,
                         }}
                       >
-                        {article.created_at
-                          ? new Date(
-                              article.created_at
-                            ).toLocaleString()
-                          : "Unknown date"}
-                      </Text>
-
-                      <Paragraph
-                        style={{
-                          margin: 0,
-                          whiteSpace:
-                            "pre-wrap",
-                          lineHeight: 1.7,
-                          overflowWrap:
-                            "anywhere",
-                        }}
-                      >
-                        {article.article}
-                      </Paragraph>
-
-                      {article.failed_words &&
-                        article.failed_words
-                          .length > 0 && (
-                          <Flex
-                            wrap="wrap"
-                            gap={6}
-                          >
-                            {article.failed_words.map(
-                              (
-                                failedWord,
-                                index
-                              ) => (
-                                <Tag
-                                  color="blue"
-                                  key={`${failedWord.word}-${index}`}
-                                  style={{
-                                    marginInlineEnd: 0,
-                                  }}
-                                >
-                                  {
-                                    failedWord.word
-                                  }
-                                </Tag>
-                              )
-                            )}
-                          </Flex>
+                        {article.failed_words.map(
+                          (
+                            failedWord,
+                            index
+                          ) => (
+                            <Tag
+                              color="blue"
+                              key={`${failedWord.word}-${index}`}
+                              style={{
+                                marginInlineEnd: 0,
+                                fontSize: 14,
+                              }}
+                            >
+                              {
+                                failedWord.word
+                              }
+                            </Tag>
+                          )
                         )}
-                    </Space>
-                  </Card>
-                )
-              )}
+                      </Flex>
+                    )}
+                </div>
+              ))}
             </Space>
           )}
         </Card>
