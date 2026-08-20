@@ -8,7 +8,6 @@ import {
   Flex,
   Space,
   Spin,
-  Statistic,
   Tag,
   Typography,
 } from "antd";
@@ -77,10 +76,6 @@ export default function HistoryPage() {
     useState<LearningArticle[]>([]);
   const [error, setError] = useState("");
 
-  /*
-   * Shared styling for history items.
-   * This keeps all four sections visually consistent.
-   */
   const historyItemStyle = {
     background: "#e6f4ff",
     border: "1px solid #91caff",
@@ -119,7 +114,6 @@ export default function HistoryPage() {
 
       const userId = session.user.id;
 
-      // Correct guesses
       const {
         data: completedWords,
         error: completedWordsError,
@@ -146,7 +140,6 @@ export default function HistoryPage() {
         setCorrectGuesses(completedWords ?? []);
       }
 
-      // Incorrect guesses
       const {
         data: incompleteWords,
         error: incompleteWordsError,
@@ -173,7 +166,6 @@ export default function HistoryPage() {
         setIncorrectGuesses(incompleteWords ?? []);
       }
 
-      // Personal words
       const {
         data: wordsData,
         error: wordsError,
@@ -201,7 +193,6 @@ export default function HistoryPage() {
         setMyWords(wordsData ?? []);
       }
 
-      // Learning articles
       const {
         data: articlesData,
         error: articlesError,
@@ -305,56 +296,59 @@ export default function HistoryPage() {
           Game History
         </Title>
 
-        {/* SUMMARY */}
+        {/* SIMPLE SUMMARY COUNTS */}
 
-        <Flex wrap="wrap" gap={12}>
-          <Card
+        <Flex
+          wrap="wrap"
+          justify="center"
+          gap={24}
+          style={{
+            padding: "8px 0",
+          }}
+        >
+          <Text
             style={{
-              flex: "1 1 180px",
+              fontSize: 16,
             }}
           >
-            <Statistic
-              title="Correct"
-              value={correctGuesses.length}
-              prefix={<CheckCircleOutlined />}
-            />
-          </Card>
+            <CheckCircleOutlined /> Correct:{" "}
+            <Text strong>
+              {correctGuesses.length}
+            </Text>
+          </Text>
 
-          <Card
+          <Text
             style={{
-              flex: "1 1 180px",
+              fontSize: 16,
             }}
           >
-            <Statistic
-              title="Incorrect"
-              value={incorrectGuesses.length}
-              prefix={<CloseCircleOutlined />}
-            />
-          </Card>
+            <CloseCircleOutlined /> Incorrect:{" "}
+            <Text strong>
+              {incorrectGuesses.length}
+            </Text>
+          </Text>
 
-          <Card
+          <Text
             style={{
-              flex: "1 1 180px",
+              fontSize: 16,
             }}
           >
-            <Statistic
-              title="My Words"
-              value={myWords.length}
-              prefix={<BookOutlined />}
-            />
-          </Card>
+            <BookOutlined /> My Words:{" "}
+            <Text strong>
+              {myWords.length}
+            </Text>
+          </Text>
 
-          <Card
+          <Text
             style={{
-              flex: "1 1 180px",
+              fontSize: 16,
             }}
           >
-            <Statistic
-              title="Learning Articles"
-              value={articles.length}
-              prefix={<FileTextOutlined />}
-            />
-          </Card>
+            <FileTextOutlined /> Learning Articles:{" "}
+            <Text strong>
+              {articles.length}
+            </Text>
+          </Text>
         </Flex>
 
         {/* CORRECT GUESSES */}
@@ -367,7 +361,6 @@ export default function HistoryPage() {
               wrap="wrap"
             >
               <CheckCircleOutlined />
-
               <span>Correct Guesses</span>
 
               <Tag color="green">
@@ -418,7 +411,6 @@ export default function HistoryPage() {
               wrap="wrap"
             >
               <CloseCircleOutlined />
-
               <span>Incorrect Guesses</span>
 
               <Tag color="red">
@@ -469,7 +461,6 @@ export default function HistoryPage() {
               wrap="wrap"
             >
               <BookOutlined />
-
               <span>My Words</span>
 
               <Tag>
@@ -560,7 +551,6 @@ export default function HistoryPage() {
               wrap="wrap"
             >
               <FileTextOutlined />
-
               <span>
                 Learning Articles
               </span>

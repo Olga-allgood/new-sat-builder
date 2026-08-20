@@ -543,6 +543,9 @@ export default function GameBoard({
                       guessedLetters={
                         guessedLetters
                       }
+                      incorrectGuesses={
+                        incorrectGuesses
+                      }
                       onGuess={
                         handleGuess
                       }
