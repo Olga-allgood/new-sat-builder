@@ -1,46 +1,133 @@
-'use client'
-import { useEffect, useState } from 'react';
-import GameBoard from '@/app/components/GameBoard';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/app/lib/supabaseClient';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Alert,
+  Flex,
+  Spin,
+  Typography,
+} from "antd";
 
-export default function GamePage(){
-    const router = useRouter();
-    const [loading, setLoading] = useState(false)
-    const [userId, setUserId] = useState('')
+import { supabase } from "@/app/lib/supabaseClient";
+import GameBoard from "@/app/components/GameBoard";
 
-    useEffect(() => {
-        async function checkAuth(){
-            setLoading(true)
-            const {data, error} = await supabase.auth.getSession();
-            if(!data.session) {
-                router.push('/login')
-            
-            }else{setUserId(data.session.user.id)
-                setLoading(false);
-            }
+const { Text } = Typography;
+
+export default function GamePage() {
+  const router = useRouter();
+
+  const [userId, setUserId] =
+    useState<string | null>(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  useEffect(() => {
+    async function loadUser() {
+      setLoading(true);
+      setError("");
+
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        setError(
+          "Unable to verify your session."
+        );
+        setLoading(false);
+        return;
+      }
+
+      if (!session) {
+        router.replace("/login");
+        return;
+      }
+
+      setUserId(session.user.id);
+      setLoading(false);
+    }
+
+    loadUser();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) {
+          setUserId(null);
+          router.replace("/login");
+          return;
         }
-        checkAuth()
-        const { data: { subscription }} = supabase.auth.onAuthStateChange((_event, session) => {
-                if(!session) {
-                    router.push('/login')
-                }
-            })
-             return () => {
-                subscription.unsubscribe();
-            };
-    }, [router]);
 
-return (
-  <div className="min-h-screen bg-white px-6 py-8">
-    <div className="max-w-3xl mx-auto text-center space-y-6">
-      <p className="text-lg text-gray-700 font-medium">Use your keyboard to select a letter!</p>
-      {userId && <GameBoard userId={userId} />}
-    </div>
-  </div>
-);
+        setUserId(session.user.id);
+      }
+    );
 
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [router]);
 
+  if (loading) {
+    return (
+      <Flex
+        vertical
+        align="center"
+        justify="center"
+        gap={12}
+        style={{
+          minHeight: "70vh",
+          padding: 16,
+        }}
+      >
+        <Spin size="large" />
+
+        <Text type="secondary">
+          Loading your game...
+        </Text>
+      </Flex>
+    );
+  }
+
+  if (error) {
+    return (
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 900,
+          margin: "0 auto",
+          padding: "24px 16px",
+        }}
+      >
+        <Alert
+          type="error"
+          showIcon
+          message="Unable to load game"
+          description={error}
+        />
+      </div>
+    );
+  }
+
+  if (!userId) {
+    return null;
+  }
+
+  return (
+    <main
+      style={{
+        width: "100%",
+        minHeight: "calc(100vh - 80px)",
+        padding: "16px 0 32px",
+      }}
+    >
+      <GameBoard userId={userId} />
+    </main>
+  );
 }
-

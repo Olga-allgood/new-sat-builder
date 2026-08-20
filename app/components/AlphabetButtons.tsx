@@ -1,3 +1,6 @@
+"use client";
+
+import { Button, Flex } from "antd";
 
 type AlphabetButtonsProps = {
   guessedLetters: Set<string>;
@@ -5,9 +8,9 @@ type AlphabetButtonsProps = {
 };
 
 const rows = [
-  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-  ['Z', 'X', 'C', 'V', 'B', 'N', 'M'],
+  ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+  ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
+  ["Z", "X", "C", "V", "B", "N", "M"],
 ];
 
 export default function AlphabetButtons({
@@ -15,46 +18,50 @@ export default function AlphabetButtons({
   onGuess,
 }: AlphabetButtonsProps) {
   return (
-    <div className="w-full max-w-md mx-auto px-2">
+    <Flex
+      vertical
+      gap={8}
+      align="center"
+      style={{
+        width: "100%",
+        maxWidth: 520,
+        margin: "0 auto",
+      }}
+    >
       {rows.map((row, rowIndex) => (
-        <div
+        <Flex
           key={rowIndex}
-          className="flex justify-center gap-1.5 sm:gap-2 mb-2"
+          justify="center"
+          gap={6}
+          style={{
+            width: "100%",
+          }}
         >
           {row.map((letter) => {
-            const guessed =
-              guessedLetters.has(letter);
+            const guessed = guessedLetters.has(letter);
 
             return (
-              <button
+              <Button
                 key={letter}
-                type="button"
-                onClick={() => onGuess(letter)}
+                type={guessed ? "default" : "primary"}
                 disabled={guessed}
-                className={`
-                  w-8 h-11
-                  sm:w-10 sm:h-12
-                  md:w-11 md:h-12
-                  shrink-0
-                  rounded-md
-                  font-semibold
-                  text-sm sm:text-base
-                  transition
-                  touch-manipulation
-                  ${
-                    guessed
-                      ? 'bg-gray-300 text-gray-500'
-                      : 'bg-blue-500 text-white hover:bg-blue-600 active:scale-95'
-                  }
-                `}
+                onClick={() => onGuess(letter)}
+                style={{
+                  flex: "1 1 0",
+                  maxWidth: 44,
+                  minWidth: 0,
+                  height: 44,
+                  padding: 0,
+                  fontWeight: 600,
+                  touchAction: "manipulation",
+                }}
               >
                 {letter}
-              </button>
+              </Button>
             );
           })}
-        </div>
+        </Flex>
       ))}
-    </div>
+    </Flex>
   );
 }
-

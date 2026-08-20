@@ -1,127 +1,312 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/app/lib/supabaseClient'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  Input,
+  Space,
+  Typography,
+} from "antd";
+import {
+  LockOutlined,
+  MailOutlined,
+  UserAddOutlined,
+} from "@ant-design/icons";
 
-export default function Signup() {
-  const router = useRouter()
+import { supabase } from "@/app/lib/supabaseClient";
 
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+const { Title, Text, Paragraph } = Typography;
 
+interface SignupFormValues {
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
 
- useEffect(() => {
-  async function checkAuth() {
-    const { data } = await supabase.auth.getSession()
+export default function SignupPage() {
+  const router = useRouter();
 
-    if (data.session) {
-      router.push('/game')
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function checkAuth() {
+      const { data } =
+        await supabase.auth.getSession();
+
+      if (data.session) {
+        router.replace("/game");
+      }
     }
-  }
 
-  checkAuth()
-}, [router])
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+    checkAuth();
+  }, [router]);
 
+  const handleSignup = async (
+    values: SignupFormValues
+  ) => {
+    setLoading(true);
+    setError("");
 
-      // 1️. Sign up user
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      })
+    const email = values.email.trim();
 
-      if (error) {
-        setError(error.message)
-        setLoading(false)
-      }
+    // 1. Create Supabase auth user
+    const {
+      data,
+      error: signupError,
+    } = await supabase.auth.signUp({
+      email,
+      password: values.password,
+    });
 
-      // 2. Create profile (NO password)
-      if (data.user) { await supabase 
-        .from('profiles')
-        .insert({
-          id: data.user.id,
-          email: data.user.email,
-        })
-        router.push('/game')
-      }
-      setLoading(false)
+    if (signupError) {
+      setError(signupError.message);
+      setLoading(false);
+      return;
+    }
 
-      // 3️.Redirect → Header will pick up session
-    
-      
-    }  
-  
-  
+    if (!data.user) {
+      setError(
+        "Account could not be created. Please try again."
+      );
+      setLoading(false);
+      return;
+    }
 
-  // return (
-  //   <div>
-  //   <form onSubmit={handleSignup}>
-  //     <h1>Sign up</h1>
+    // 2. Create matching public.profiles row
+    const {
+      error: profileError,
+    } = await supabase
+      .from("profiles")
+      .insert({
+        id: data.user.id,
+        email: data.user.email,
+      });
 
-  //     <input
-  //       type="email"
-  //       value={email}
-  //       onChange={(e) => setEmail(e.target.value)}
-  //       placeholder="Email"
-  //       required
-  //     />
+    if (profileError) {
+      console.error(
+        "Profile creation error:",
+        profileError
+      );
 
-  //     <input
-  //       type="password"
-  //       value={password}
-  //       onChange={(e) => setPassword(e.target.value)}
-  //       placeholder="Password"
-  //       required
-  //     />
+      setError(
+        `Your account was created, but your profile could not be created: ${profileError.message}`
+      );
 
-  //     <button type="submit" disabled={loading}>
-  //       {loading ? 'Creating account…' : 'Sign up'}
-  //     </button>
-  //   </form>
-  //   {error&&(<p>{error}</p>)}
-  //   </div>
-  // )
-return (
-  <div className="min-h-screen flex items-center justify-center bg-white px-6">
-    <div className="w-full max-w-md bg-gray-50 border border-[#787b80]/30 rounded-md p-8 space-y-6">
-      <h1 className="text-2xl font-semibold text-[#2d76c0] text-center">Sign Up</h1>
+      setLoading(false);
+      return;
+    }
 
-      {error && <p className="text-red-600 font-medium text-center">{error}</p>}
+    // 3. Email verification is disabled,
+    // so the user should already have a session.
+    if (data.session) {
+      router.replace("/game");
+      return;
+    }
 
-      <form onSubmit={handleSignup} className="space-y-4">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Email"
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#009CDE]"
-        />
+    // Fallback in case Supabase doesn't return a session
+    setError(
+      "Your account was created, but a session was not started automatically."
+    );
 
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Password"
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#009CDE]"
-        />
+    setLoading(false);
+  };
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full px-4 py-2 rounded-md bg-[#009CDE] text-white font-medium hover:bg-[#2d76c0] disabled:opacity-50 transition"
+  return (
+    <div
+      style={{
+        minHeight: "calc(100vh - 80px)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "24px 16px",
+      }}
+    >
+      <Card
+        style={{
+          width: "100%",
+          maxWidth: 420,
+        }}
+        styles={{
+          body: {
+            padding: "32px 24px",
+          },
+        }}
+      >
+        <Space
+          orientation="vertical"
+          size="large"
+          style={{
+            width: "100%",
+          }}
         >
-          {loading ? 'Creating account…' : 'Sign Up'}
-        </button>
-      </form>
-    </div>
-  </div>
-);
+          <div
+            style={{
+              textAlign: "center",
+            }}
+          >
+            <Title
+              level={2}
+              style={{
+                marginBottom: 8,
+                color: "#2d76c0",
+              }}
+            >
+              Create Your Account
+            </Title>
 
+            <Paragraph
+              type="secondary"
+              style={{
+                marginBottom: 0,
+              }}
+            >
+              Create an account to practice SAT
+              vocabulary and track your progress.
+            </Paragraph>
+          </div>
+
+          {error && (
+            <Alert
+              type="error"
+              title="Unable to create account"
+              description={error}
+              showIcon
+              closable
+              onClose={() => setError("")}
+            />
+          )}
+
+          <Form
+            layout="vertical"
+            onFinish={handleSignup}
+            requiredMark={false}
+          >
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[
+                {
+                  required: true,
+                  message:
+                    "Please enter your email.",
+                },
+                {
+                  type: "email",
+                  message:
+                    "Please enter a valid email address.",
+                },
+              ]}
+            >
+              <Input
+                size="large"
+                prefix={<MailOutlined />}
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Password"
+              name="password"
+              rules={[
+                {
+                  required: true,
+                  message:
+                    "Please enter a password.",
+                },
+                {
+                  min: 6,
+                  message:
+                    "Password must be at least 6 characters.",
+                },
+              ]}
+              hasFeedback
+            >
+              <Input.Password
+                size="large"
+                prefix={<LockOutlined />}
+                placeholder="Password"
+                autoComplete="new-password"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Confirm Password"
+              name="confirmPassword"
+              dependencies={["password"]}
+              hasFeedback
+              rules={[
+                {
+                  required: true,
+                  message:
+                    "Please confirm your password.",
+                },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (
+                      !value ||
+                      getFieldValue("password") ===
+                        value
+                    ) {
+                      return Promise.resolve();
+                    }
+
+                    return Promise.reject(
+                      new Error(
+                        "The passwords do not match."
+                      )
+                    );
+                  },
+                }),
+              ]}
+            >
+              <Input.Password
+                size="large"
+                prefix={<LockOutlined />}
+                placeholder="Confirm password"
+                autoComplete="new-password"
+              />
+            </Form.Item>
+
+            <Form.Item
+              style={{
+                marginBottom: 12,
+              }}
+            >
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<UserAddOutlined />}
+                loading={loading}
+                block
+                size="large"
+              >
+                Create Account
+              </Button>
+            </Form.Item>
+
+            <div
+              style={{
+                textAlign: "center",
+              }}
+            >
+              <Text type="secondary">
+                Already have an account?{" "}
+              </Text>
+
+              <Link href="/login">
+                Log In
+              </Link>
+            </div>
+          </Form>
+        </Space>
+      </Card>
+    </div>
+  );
 }

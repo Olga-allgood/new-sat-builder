@@ -1,191 +1,226 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import {
+  Button,
+  Flex,
+  Space,
+  Typography,
+} from "antd";
+import {
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  HistoryOutlined,
+  LoginOutlined,
+  LogoutOutlined,
+  UserAddOutlined,
+} from "@ant-design/icons";
+
 import { supabase } from "@/app/lib/supabaseClient";
 import { SignOut } from "@/app/lib/auth";
-import { getUser } from "@/app/lib/auth";
-import { getSession } from "@/app/lib/auth";
 
-
+const { Title, Text } = Typography;
 
 export default function Header() {
-    const [user, setUser] = useState<string | null> (null); 
-    // string?
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [failedWords, setFailedWords] = useState(0);
-    const [guessedWords, setGuessedWords] = useState(0);
-    const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<string | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [failedWords, setFailedWords] = useState(0);
+  const [guessedWords, setGuessedWords] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-    
-    const getUser = async (id:string) => {
-        const {
-            data: profile,
-            error
-        } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('id', id)
-        .maybeSingle();
+  const fetchUserData = async (id: string) => {
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("id", id)
+      .maybeSingle();
 
-         if (error) {
-      console.error(error.message)
-      return
+    if (error) {
+      console.error(error.message);
+      return;
     }
 
-        setUser(profile?.email)
+    setUser(profile?.email ?? null);
 
-         const {
-            count: correctCount,
-            error: correctError
-            } = await supabase
-            .from('game_sessions')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', id)
-            .eq('status', true)
-            .eq('correct_guesses', true)
-            console.log(correctCount)
+    const {
+      count: correctCount,
+      error: correctError,
+    } = await supabase
+      .from("game_sessions")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", id)
+      .eq("status", true)
+      .eq("correct_guesses", true);
 
-if (!correctError && correctCount !== null) {
-  setGuessedWords(correctCount)
-};
-
-           const {
-            count: incorrectCount,
-            error: incorrectError
-            } = await supabase
-            .from('game_sessions')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', id)
-            .eq('status', true)
-            .eq('correct_guesses', false)
-
-if (!incorrectError && incorrectCount !== null) {
-  setFailedWords(incorrectCount)
-};
-
+    if (!correctError && correctCount !== null) {
+      setGuessedWords(correctCount);
     }
-    useEffect(() => {
-        supabase.auth.getSession().then(({data}) => {
-            const session = data.session
-            if (session){
-                setIsLoggedIn(true)
-                getUser(session.user.id)
-            }
-            setLoading(false)
-        });
-        const { data: { subscription }} = supabase.auth.onAuthStateChange((_event, session) => {
-                if(session?.user) {
-                    setIsLoggedIn(true);
-                    getUser(session.user.id);
-                } else {
-                    setIsLoggedIn(false);
-                    setUser(null);
-                    setGuessedWords(0);
-                    setFailedWords(0);
-                }
-            });
-            return () => {
-                subscription.unsubscribe();
-            };
-            
-    }, []);
-    useEffect(() => {
-        function increaseCorrectCount(){
-            setGuessedWords(prev => prev+1)
-        };
-        function increaseIncorrectCount(){
-            setFailedWords(prev => prev+1)
-        };
-        window.addEventListener("wordCompleted", increaseCorrectCount);
-        window.addEventListener("wordFailed", increaseIncorrectCount);
-        return () => {
-             window.removeEventListener("wordCompleted", increaseCorrectCount);
-             window.removeEventListener("wordFailed", increaseIncorrectCount);
-                };
 
-    }, []);
-     if (loading) return null;
-    async function loggingOut() {
-        await SignOut();
+    const {
+      count: incorrectCount,
+      error: incorrectError,
+    } = await supabase
+      .from("game_sessions")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", id)
+      .eq("status", true)
+      .eq("correct_guesses", false);
+
+    if (!incorrectError && incorrectCount !== null) {
+      setFailedWords(incorrectCount);
+    }
+  };
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      const session = data.session;
+
+      if (session) {
+        setIsLoggedIn(true);
+        fetchUserData(session.user.id);
+      }
+
+      setLoading(false);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setIsLoggedIn(true);
+        fetchUserData(session.user.id);
+      } else {
         setIsLoggedIn(false);
         setUser(null);
         setGuessedWords(0);
         setFailedWords(0);
-       
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    function increaseCorrectCount() {
+      setGuessedWords((prev) => prev + 1);
     }
- 
-return (
-  <header className="border-b border-[#787b80]/30 bg-white">
-    <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
 
-      {/* Logo / Title */}
-      <h2 className="text-xl font-semibold text-[#2d76c0]">
-        SAT Vocabulary Builder
-      </h2>
+    function increaseIncorrectCount() {
+      setFailedWords((prev) => prev + 1);
+    }
 
-      {/* Right-side content */}
-      {isLoggedIn ? (
-        <div className="flex items-center gap-6 text-sm text-gray-700">
-          <span>
-            Welcome, <span className="font-medium">{user}</span>
-          </span>
+    window.addEventListener("wordCompleted", increaseCorrectCount);
+    window.addEventListener("wordFailed", increaseIncorrectCount);
 
-          <span className="text-green-700">
-            ✓ {guessedWords}
-          </span>
+    return () => {
+      window.removeEventListener("wordCompleted", increaseCorrectCount);
+      window.removeEventListener("wordFailed", increaseIncorrectCount);
+    };
+  }, []);
 
-          <span className="text-red-600">
-            ✕ {failedWords}
-          </span>
+  async function loggingOut() {
+    await SignOut();
 
-          <Link
-            href="/history"
-            className="text-[#009CDE] hover:underline font-medium"
+    setIsLoggedIn(false);
+    setUser(null);
+    setGuessedWords(0);
+    setFailedWords(0);
+  }
+
+  if (loading) {
+    return null;
+  }
+
+  return (
+    <header
+      style={{
+        borderBottom: "1px solid #f0f0f0",
+        background: "#ffffff",
+      }}
+    >
+      <Flex
+        justify="space-between"
+        align="center"
+        wrap="wrap"
+        gap={16}
+        style={{
+          maxWidth: 1200,
+          margin: "0 auto",
+          padding: "16px 20px",
+        }}
+      >
+        {/* Logo / Title */}
+        <Link href="/" style={{ textDecoration: "none" }}>
+          <Title
+            level={3}
+            style={{
+              margin: 0,
+              color: "#2d76c0",
+            }}
           >
-            Your history
-          </Link>
+            SAT Vocabulary Builder
+          </Title>
+        </Link>
 
-          <button
-            onClick={loggingOut}
-            className="
-              px-4 py-2 rounded-md
-              border border-[#009CDE]
-              text-[#009CDE] font-medium
-              hover:bg-[#009CDE] hover:text-white
-              transition
-            "
+        {/* Logged-in user */}
+        {isLoggedIn ? (
+          <Flex
+            align="center"
+            wrap="wrap"
+            gap={12}
           >
-            Log Out
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-center gap-4">
-          <Link
-            href="/login"
-            className="text-[#009CDE] font-medium hover:underline"
-          >
-            Log In
-          </Link>
+            <Text type="secondary">
+              Welcome,{" "}
+              <Text strong>
+                {user}
+              </Text>
+            </Text>
 
-          <Link
-            href="/signup"
-            className="
-              px-4 py-2 rounded-md
-              bg-[#009CDE] text-white font-medium
-              hover:bg-[#2d76c0]
-              transition
-            "
-          >
-            Sign Up
-          </Link>
-        </div>
-      )}
+            <Space size="small">
+              <Text type="success">
+                <CheckCircleOutlined /> {guessedWords}
+              </Text>
 
-    </div>
-  </header>
-);
+              <Text type="danger">
+                <CloseCircleOutlined /> {failedWords}
+              </Text>
+            </Space>
+
+            <Link href="/history">
+              <Button icon={<HistoryOutlined />}>
+                History
+              </Button>
+            </Link>
+
+            <Button
+              icon={<LogoutOutlined />}
+              onClick={loggingOut}
+            >
+              Log Out
+            </Button>
+          </Flex>
+        ) : (
+          <Space wrap>
+            <Link href="/login">
+              <Button icon={<LoginOutlined />}>
+                Log In
+              </Button>
+            </Link>
+
+            <Link href="/signup">
+              <Button
+                type="primary"
+                icon={<UserAddOutlined />}
+              >
+                Sign Up
+              </Button>
+            </Link>
+          </Space>
+        )}
+      </Flex>
+    </header>
+  );
 }
-
-    
-
-

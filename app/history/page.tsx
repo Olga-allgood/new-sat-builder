@@ -1,8 +1,27 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/app/lib/supabaseClient';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Alert,
+  Card,
+  Flex,
+  Space,
+  Spin,
+  Statistic,
+  Tag,
+  Typography,
+} from "antd";
+import {
+  BookOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  FileTextOutlined,
+} from "@ant-design/icons";
+
+import { supabase } from "@/app/lib/supabaseClient";
+
+const { Title, Text, Paragraph } = Typography;
 
 interface Example {
   example_standard: string;
@@ -48,40 +67,44 @@ export default function HistoryPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
-  const [correctGuesses, setCorrectGuesses] = useState<GameHistory[]>([]);
-  const [incorrectGuesses, setIncorrectGuesses] = useState<GameHistory[]>([]);
-  const [myWords, setMyWords] = useState<HistoryWord[]>([]);
-  const [error, setError] = useState('');
-  const [articles, setArticles] = useState<LearningArticle[]>([]);
+
+  const [correctGuesses, setCorrectGuesses] =
+    useState<GameHistory[]>([]);
+
+  const [incorrectGuesses, setIncorrectGuesses] =
+    useState<GameHistory[]>([]);
+
+  const [myWords, setMyWords] =
+    useState<HistoryWord[]>([]);
+
+  const [articles, setArticles] =
+    useState<LearningArticle[]>([]);
+
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    async function fetchGames() {
+    async function fetchHistory() {
       setLoading(true);
-      setError('');
-
-      /* ------------------ Get Current Session ------------------ */
+      setError("");
 
       const {
         data: { session },
       } = await supabase.auth.getSession();
 
       if (!session) {
-        router.push('/login');
+        router.push("/login");
         setLoading(false);
         return;
       }
 
       const userId = session.user.id;
 
-      /* =========================================================
-         CORRECT GUESSES
-      ========================================================= */
-
+      // Correct guesses
       const {
         data: completedWords,
-        error: errorCompletedWords,
+        error: completedWordsError,
       } = await supabase
-        .from('game_sessions')
+        .from("game_sessions")
         .select(`
           id,
           word_id,
@@ -92,26 +115,23 @@ export default function HistoryPage() {
             meaning
           )
         `)
-        .eq('user_id', userId)
-        .eq('status', true)
-        .eq('correct_guesses', true)
+        .eq("user_id", userId)
+        .eq("status", true)
+        .eq("correct_guesses", true)
         .returns<GameHistory[]>();
 
-      if (errorCompletedWords) {
-        setError(errorCompletedWords.message);
+      if (completedWordsError) {
+        setError(completedWordsError.message);
       } else {
         setCorrectGuesses(completedWords ?? []);
       }
 
-      /* =========================================================
-         INCORRECT GUESSES
-      ========================================================= */
-
+      // Incorrect guesses
       const {
         data: incompleteWords,
-        error: errorIncompleteWords,
+        error: incompleteWordsError,
       } = await supabase
-        .from('game_sessions')
+        .from("game_sessions")
         .select(`
           id,
           word_id,
@@ -122,33 +142,23 @@ export default function HistoryPage() {
             meaning
           )
         `)
-        .eq('user_id', userId)
-        .eq('status', true)
-        .eq('correct_guesses', false)
+        .eq("user_id", userId)
+        .eq("status", true)
+        .eq("correct_guesses", false)
         .returns<GameHistory[]>();
 
-      if (errorIncompleteWords) {
-        setError(errorIncompleteWords.message);
+      if (incompleteWordsError) {
+        setError(incompleteWordsError.message);
       } else {
         setIncorrectGuesses(incompleteWords ?? []);
       }
 
-      /* =========================================================
-         MY WORDS
-
-         Personal words now belong directly to the user through:
-
-         words.user_id
-
-         We no longer need to find personal words through
-         game_sessions.
-      ========================================================= */
-
+      // Personal words
       const {
         data: wordsData,
         error: wordsError,
       } = await supabase
-        .from('words')
+        .from("words")
         .select(`
           id,
           word,
@@ -161,9 +171,9 @@ export default function HistoryPage() {
             example_funny
           )
         `)
-        .eq('user_id', userId)
-        .eq('is_public', false)
-        .order('word');
+        .eq("user_id", userId)
+        .eq("is_public", false)
+        .order("word");
 
       if (wordsError) {
         setError(wordsError.message);
@@ -171,18 +181,15 @@ export default function HistoryPage() {
         setMyWords(wordsData ?? []);
       }
 
-      /* =========================================================
-         LEARNING ARTICLES
-      ========================================================= */
-
+      // Learning articles
       const {
         data: articlesData,
         error: articlesError,
       } = await supabase
-        .from('learning_articles')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', {
+        .from("learning_articles")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", {
           ascending: false,
         });
 
@@ -195,282 +202,468 @@ export default function HistoryPage() {
       setLoading(false);
     }
 
-    fetchGames();
-
-    /* =========================================================
-       AUTH LISTENER
-    ========================================================= */
+    fetchHistory();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
-        router.push('/login');
+    } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session) {
+          router.push("/login");
+        }
       }
-    });
+    );
 
     return () => {
       subscription.unsubscribe();
     };
   }, [router]);
 
-  /* =========================================================
-     ERROR
-  ========================================================= */
-
   if (error) {
     return (
-      <div className="p-6">
-        <p className="text-red-600">
-          There is an error: {error}
-        </p>
+      <div
+        style={{
+          maxWidth: 1000,
+          margin: "0 auto",
+          padding: 16,
+        }}
+      >
+        <Alert
+          type="error"
+          showIcon
+          message="Unable to load history"
+          description={error}
+        />
       </div>
     );
   }
-
-  /* =========================================================
-     LOADING
-  ========================================================= */
 
   if (loading) {
     return (
-      <div className="p-6">
-        <p>Loading history...</p>
-      </div>
+      <Flex
+        vertical
+        align="center"
+        justify="center"
+        gap={12}
+        style={{
+          minHeight: 300,
+        }}
+      >
+        <Spin size="large" />
+
+        <Text type="secondary">
+          Loading history...
+        </Text>
+      </Flex>
     );
   }
 
-  /* =========================================================
-     PAGE
-  ========================================================= */
-
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 1000,
+        margin: "0 auto",
+        padding: "24px 16px",
+      }}
+    >
+      <Space
+        orientation="vertical"
+        size="large"
+        style={{
+          width: "100%",
+        }}
+      >
+        <Title
+          level={2}
+          style={{
+            textAlign: "center",
+            margin: 0,
+            color: "#2d76c0",
+          }}
+        >
+          Game History
+        </Title>
 
-      <h1 className="text-3xl font-semibold text-[#2d76c0] text-center">
-        Game History
-      </h1>
+        {/* SUMMARY */}
 
-      {/* =====================================================
-          CORRECT GUESSES
-      ===================================================== */}
+        <Flex
+          wrap="wrap"
+          gap={12}
+        >
+          <Card
+            style={{
+              flex: "1 1 180px",
+            }}
+          >
+            <Statistic
+              title="Correct"
+              value={correctGuesses.length}
+              prefix={
+                <CheckCircleOutlined />
+              }
+            />
+          </Card>
 
-      <div className="bg-gray-50 border rounded-md p-4">
+          <Card
+            style={{
+              flex: "1 1 180px",
+            }}
+          >
+            <Statistic
+              title="Incorrect"
+              value={incorrectGuesses.length}
+              prefix={
+                <CloseCircleOutlined />
+              }
+            />
+          </Card>
 
-        <h2 className="font-medium text-gray-700">
-          Correct Guesses: {correctGuesses.length}
-        </h2>
+          <Card
+            style={{
+              flex: "1 1 180px",
+            }}
+          >
+            <Statistic
+              title="My Words"
+              value={myWords.length}
+              prefix={<BookOutlined />}
+            />
+          </Card>
 
-        {correctGuesses.length === 0 ? (
+          <Card
+            style={{
+              flex: "1 1 180px",
+            }}
+          >
+            <Statistic
+              title="Learning Articles"
+              value={articles.length}
+              prefix={
+                <FileTextOutlined />
+              }
+            />
+          </Card>
+        </Flex>
 
-          <p className="text-gray-500 mt-3">
-            No correct guesses yet.
-          </p>
+        {/* CORRECT GUESSES */}
 
-        ) : (
-
-          <div className="mt-3">
-
-            {correctGuesses.map((item) => (
-
-              <div
-                key={item.id}
-                className="p-2 border-b"
-              >
-
-                <p className="font-medium">
-                  {item.words?.word}
-                </p>
-
-                <p>
-                  {item.words?.meaning}
-                </p>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        )}
-
-      </div>
-
-      {/* =====================================================
-          INCORRECT GUESSES
-      ===================================================== */}
-
-      <div className="bg-gray-50 border rounded-md p-4">
-
-        <h2 className="font-medium text-gray-700">
-          Incorrect Guesses: {incorrectGuesses.length}
-        </h2>
-
-        {incorrectGuesses.length === 0 ? (
-
-          <p className="text-gray-500 mt-3">
-            No incorrect guesses yet.
-          </p>
-
-        ) : (
-
-          <div className="mt-3">
-
-            {incorrectGuesses.map((item) => (
-
-              <div
-                key={item.id}
-                className="p-2 border-b"
-              >
-
-                <p className="font-medium">
-                  {item.words?.word}
-                </p>
-
-                <p>
-                  {item.words?.meaning}
-                </p>
-
-              </div>
-
-            ))}
-
-          </div>
-
-        )}
-
-      </div>
-
-      {/* =====================================================
-          MY WORDS
-      ===================================================== */}
-
-      <div className="bg-gray-50 border rounded-md p-4">
-
-        <h2 className="font-medium text-gray-700">
-          My Words
-        </h2>
-
-        {myWords.length === 0 ? (
-
-          <p className="text-gray-500 mt-3">
-            No words available.
-          </p>
-
-        ) : (
-
-          <ul className="space-y-3 mt-3">
-
-            {myWords.map((word) => (
-
-              <li
-                key={word.id}
-                className="border-b pb-3"
-              >
-
-                <p>
-                  <span className="font-medium">
-                    {word.word}
-                  </span>
-
-                  {' '}– {word.meaning}
-                </p>
-
-                {word.examples?.map((example, index) => (
-
-                  <p
-                    key={index}
-                    className="text-sm text-gray-600 ml-4 mt-1"
-                  >
-                    Example: {example.example_standard}
-                  </p>
-
-                ))}
-
-              </li>
-
-            ))}
-
-          </ul>
-
-        )}
-
-      </div>
-
-      {/* =====================================================
-          LEARNING ARTICLES
-      ===================================================== */}
-
-      <section>
-
-        <h2 className="text-lg font-semibold mb-4">
-          📚 Learning Articles
-        </h2>
-
-        {articles.length === 0 ? (
-
-          <p className="text-gray-500">
-            No learning articles yet.
-          </p>
-
-        ) : (
-
-          articles.map((article) => (
-
-            <div
-              key={article.id}
-              className="border rounded p-4 mb-4"
+        <Card
+          title={
+            <Flex
+              align="center"
+              gap={8}
+              wrap="wrap"
             >
+              <CheckCircleOutlined />
 
-              <p className="text-xs text-gray-500">
-                {article.created_at
-                  ? new Date(
-                      article.created_at
-                    ).toLocaleString()
-                  : 'Unknown date'
-                }
-              </p>
+              <span>
+                Correct Guesses
+              </span>
 
-              <p className="whitespace-pre-wrap mt-2">
-                {article.article}
-              </p>
+              <Tag color="green">
+                {correctGuesses.length}
+              </Tag>
+            </Flex>
+          }
+        >
+          {correctGuesses.length === 0 ? (
+            <Text type="secondary">
+              No correct guesses yet.
+            </Text>
+          ) : (
+            <Space
+              orientation="vertical"
+              size="small"
+              style={{
+                width: "100%",
+              }}
+            >
+              {correctGuesses.map(
+                (item) => (
+                  <Card
+                    key={item.id}
+                    size="small"
+                  >
+                    <Text strong>
+                      {item.words?.word}
+                    </Text>
 
-              {article.failed_words &&
-                article.failed_words.length > 0 && (
-
-                <div className="flex gap-2 mt-3 flex-wrap">
-
-                  {article.failed_words.map(
-                    (word, index) => (
-
-                    <span
-                      key={index}
-                      className="
-                        bg-blue-100
-                        text-blue-700
-                        px-2
-                        py-1
-                        rounded
-                        text-xs
-                      "
+                    <Paragraph
+                      type="secondary"
+                      style={{
+                        marginTop: 4,
+                        marginBottom: 0,
+                        lineHeight: 1.6,
+                      }}
                     >
-                      {word.word}
-                    </span>
-
-                  ))}
-
-                </div>
-
+                      {item.words?.meaning}
+                    </Paragraph>
+                  </Card>
+                )
               )}
+            </Space>
+          )}
+        </Card>
 
-            </div>
+        {/* INCORRECT GUESSES */}
 
-          ))
+        <Card
+          title={
+            <Flex
+              align="center"
+              gap={8}
+              wrap="wrap"
+            >
+              <CloseCircleOutlined />
 
-        )}
+              <span>
+                Incorrect Guesses
+              </span>
 
-      </section>
+              <Tag color="red">
+                {
+                  incorrectGuesses.length
+                }
+              </Tag>
+            </Flex>
+          }
+        >
+          {incorrectGuesses.length === 0 ? (
+            <Text type="secondary">
+              No incorrect guesses yet.
+            </Text>
+          ) : (
+            <Space
+              orientation="vertical"
+              size="small"
+              style={{
+                width: "100%",
+              }}
+            >
+              {incorrectGuesses.map(
+                (item) => (
+                  <Card
+                    key={item.id}
+                    size="small"
+                  >
+                    <Text strong>
+                      {item.words?.word}
+                    </Text>
 
+                    <Paragraph
+                      type="secondary"
+                      style={{
+                        marginTop: 4,
+                        marginBottom: 0,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {item.words?.meaning}
+                    </Paragraph>
+                  </Card>
+                )
+              )}
+            </Space>
+          )}
+        </Card>
+
+        {/* MY WORDS */}
+
+        <Card
+          title={
+            <Flex
+              align="center"
+              gap={8}
+              wrap="wrap"
+            >
+              <BookOutlined />
+
+              <span>
+                My Words
+              </span>
+
+              <Tag>
+                {myWords.length}
+              </Tag>
+            </Flex>
+          }
+        >
+          {myWords.length === 0 ? (
+            <Text type="secondary">
+              No personal words available.
+            </Text>
+          ) : (
+            <Space
+              orientation="vertical"
+              size="small"
+              style={{
+                width: "100%",
+              }}
+            >
+              {myWords.map((word) => (
+                <Card
+                  key={word.id}
+                  size="small"
+                >
+                  <Space
+                    orientation="vertical"
+                    size="small"
+                    style={{
+                      width: "100%",
+                    }}
+                  >
+                    <div>
+                      <Text strong>
+                        {word.word}
+                      </Text>
+
+                      <Text>
+                        {" "}
+                        — {word.meaning}
+                      </Text>
+                    </div>
+
+                    {word.examples
+                      ?.filter(
+                        (example) =>
+                          example.example_standard
+                      )
+                      .map(
+                        (
+                          example,
+                          index
+                        ) => (
+                          <Paragraph
+                            key={index}
+                            type="secondary"
+                            style={{
+                              margin: 0,
+                              paddingLeft: 12,
+                              lineHeight: 1.6,
+                            }}
+                          >
+                            Example:{" "}
+                            {
+                              example.example_standard
+                            }
+                          </Paragraph>
+                        )
+                      )}
+                  </Space>
+                </Card>
+              ))}
+            </Space>
+          )}
+        </Card>
+
+        {/* LEARNING ARTICLES */}
+
+        <Card
+          title={
+            <Flex
+              align="center"
+              gap={8}
+              wrap="wrap"
+            >
+              <FileTextOutlined />
+
+              <span>
+                Learning Articles
+              </span>
+
+              <Tag color="blue">
+                {articles.length}
+              </Tag>
+            </Flex>
+          }
+        >
+          {articles.length === 0 ? (
+            <Text type="secondary">
+              No learning articles yet.
+            </Text>
+          ) : (
+            <Space
+              orientation="vertical"
+              size="middle"
+              style={{
+                width: "100%",
+              }}
+            >
+              {articles.map(
+                (article) => (
+                  <Card
+                    key={article.id}
+                    size="small"
+                  >
+                    <Space
+                      orientation="vertical"
+                      size="middle"
+                      style={{
+                        width: "100%",
+                      }}
+                    >
+                      <Text
+                        type="secondary"
+                        style={{
+                          fontSize: 12,
+                        }}
+                      >
+                        {article.created_at
+                          ? new Date(
+                              article.created_at
+                            ).toLocaleString()
+                          : "Unknown date"}
+                      </Text>
+
+                      <Paragraph
+                        style={{
+                          margin: 0,
+                          whiteSpace:
+                            "pre-wrap",
+                          lineHeight: 1.7,
+                          overflowWrap:
+                            "anywhere",
+                        }}
+                      >
+                        {article.article}
+                      </Paragraph>
+
+                      {article.failed_words &&
+                        article.failed_words
+                          .length > 0 && (
+                          <Flex
+                            wrap="wrap"
+                            gap={6}
+                          >
+                            {article.failed_words.map(
+                              (
+                                failedWord,
+                                index
+                              ) => (
+                                <Tag
+                                  color="blue"
+                                  key={`${failedWord.word}-${index}`}
+                                  style={{
+                                    marginInlineEnd: 0,
+                                  }}
+                                >
+                                  {
+                                    failedWord.word
+                                  }
+                                </Tag>
+                              )
+                            )}
+                          </Flex>
+                        )}
+                    </Space>
+                  </Card>
+                )
+              )}
+            </Space>
+          )}
+        </Card>
+      </Space>
     </div>
   );
 }

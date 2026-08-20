@@ -1,105 +1,220 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/app/lib/supabaseClient';
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  Input,
+  Space,
+  Typography,
+} from "antd";
+import {
+  LockOutlined,
+  LoginOutlined,
+  MailOutlined,
+} from "@ant-design/icons";
+
+import { supabase } from "@/app/lib/supabaseClient";
+
+const { Title, Text } = Typography;
+
+interface LoginFormValues {
+  email: string;
+  password: string;
+}
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  
- useEffect(() => {
-  async function checkAuth() {
-    const { data } = await supabase.auth.getSession()
+  const [error, setError] = useState("");
 
-    if (data.session) {
-      router.push('/game')
-    }
-  }
+  useEffect(() => {
+    async function checkAuth() {
+      const { data } =
+        await supabase.auth.getSession();
 
-  checkAuth()
-}, [router])
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-
-  
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error){
-        setError(error.message)
-        setLoading(false)
-      } else {
-        router.push('/game')
+      if (data.session) {
+        router.replace("/game");
       }
+    }
+
+    checkAuth();
+  }, [router]);
+
+  const handleLogin = async (
+    values: LoginFormValues
+  ) => {
+    setLoading(true);
+    setError("");
+
+    const { error: loginError } =
+      await supabase.auth.signInWithPassword({
+        email: values.email.trim(),
+        password: values.password,
+      });
+
+    if (loginError) {
+      console.error("Login error:", {
+        message: loginError.message,
+        status: loginError.status,
+        code: loginError.code,
+        name: loginError.name,
+      });
+
+      setError(loginError.message);
+      setLoading(false);
+      return;
+    }
+
+    router.replace("/game");
   };
 
-  // return (
-  //   <div>
-  //    <h1>Login</h1>
-  //   <form onSubmit={handleLogin}>
-  //     <input
-  //       type="email"
-  //       placeholder="Email"
-  //       value={email}
-  //       onChange={(e) => setEmail(e.target.value)}
-  //       required
-  //     />
-  //     <input
-  //       type="password"
-  //       placeholder="Password"
-  //       value={password}
-  //       onChange={(e) => setPassword(e.target.value)}
-  //       required
-  //     />
-  //     <button type="submit" disabled={loading}>
-  //       {loading ? 'Logging in…' : 'Login'}
-  //     </button>
-  //   </form>
-  //   {error&&(<p>{error}</p>)}
-  //   </div>
-  // );
-return (
-  <div className="min-h-screen flex items-center justify-center bg-white px-6">
-    <div className="w-full max-w-md bg-gray-50 border border-[#787b80]/30 rounded-md p-8 space-y-6">
-      <h1 className="text-2xl font-semibold text-[#2d76c0] text-center">Login</h1>
-
-      {error && <p className="text-red-600 font-medium text-center">{error}</p>}
-
-      <form onSubmit={handleLogin} className="space-y-4">
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#009CDE]"
-        />
-
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#009CDE]"
-        />
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full px-4 py-2 rounded-md bg-[#009CDE] text-white font-medium hover:bg-[#2d76c0] disabled:opacity-50 transition"
+  return (
+    <div
+      style={{
+        minHeight: "calc(100vh - 80px)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "24px 16px",
+      }}
+    >
+      <Card
+        style={{
+          width: "100%",
+          maxWidth: 420,
+        }}
+        styles={{
+          body: {
+            padding: "32px 24px",
+          },
+        }}
+      >
+        <Space
+          orientation="vertical"
+          size="large"
+          style={{
+            width: "100%",
+          }}
         >
-          {loading ? 'Logging in…' : 'Login'}
-        </button>
-      </form>
-    </div>
-  </div>
-);
+          <div
+            style={{
+              textAlign: "center",
+            }}
+          >
+            <Title
+              level={2}
+              style={{
+                marginBottom: 8,
+                color: "#2d76c0",
+              }}
+            >
+              Welcome Back
+            </Title>
 
+            <Text type="secondary">
+              Log in to continue practicing SAT vocabulary.
+            </Text>
+          </div>
+
+          {error && (
+            <Alert
+              type="error"
+              title="Unable to log in"
+              description={error}
+              showIcon
+              closable={{
+                onClose: () => setError(""),
+              }}
+            />
+          )}
+
+          <Form
+            layout="vertical"
+            onFinish={handleLogin}
+            requiredMark={false}
+          >
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[
+                {
+                  required: true,
+                  message:
+                    "Please enter your email.",
+                },
+                {
+                  type: "email",
+                  message:
+                    "Please enter a valid email address.",
+                },
+              ]}
+            >
+              <Input
+                size="large"
+                prefix={<MailOutlined />}
+                placeholder="you@example.com"
+                autoComplete="email"
+              />
+            </Form.Item>
+
+            <Form.Item
+              label="Password"
+              name="password"
+              rules={[
+                {
+                  required: true,
+                  message:
+                    "Please enter your password.",
+                },
+              ]}
+            >
+              <Input.Password
+                size="large"
+                prefix={<LockOutlined />}
+                placeholder="Password"
+                autoComplete="current-password"
+              />
+            </Form.Item>
+
+            <Form.Item
+              style={{
+                marginBottom: 12,
+              }}
+            >
+              <Button
+                type="primary"
+                htmlType="submit"
+                icon={<LoginOutlined />}
+                loading={loading}
+                block
+                size="large"
+              >
+                Log In
+              </Button>
+            </Form.Item>
+
+            <div
+              style={{
+                textAlign: "center",
+              }}
+            >
+              <Text type="secondary">
+                Don&apos;t have an account?{" "}
+              </Text>
+
+              <Link href="/signup">
+                Sign Up
+              </Link>
+            </div>
+          </Form>
+        </Space>
+      </Card>
+    </div>
+  );
 }

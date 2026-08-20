@@ -1,15 +1,38 @@
+"use client";
 
-'use client';
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Alert,
+  Button,
+  Card,
+  Col,
+  Divider,
+  Flex,
+  Row,
+  Space,
+  Spin,
+  Statistic,
+  Typography,
+} from "antd";
+import {
+  AudioOutlined,
+  CloseOutlined,
+  FileTextOutlined,
+  PlusOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 
-import { useState, useEffect } from 'react';
-import { supabase } from '@/app/lib/supabaseClient';
-import { word_with_examples } from '@/app/types/database';
-import WordCard from './WordCard';
-import AlphabetButtons from './AlphabetButtons';
-import CompleteDisplay from './CompleteDisplay';
-import PersonalWordForm from './PersonalWordForm';
-import { useRouter } from 'next/navigation';
-import ArticlePanel from './ArticlePanel';
+import { supabase } from "@/app/lib/supabaseClient";
+import { word_with_examples } from "@/app/types/database";
+
+import AlphabetButtons from "./AlphabetButtons";
+import ArticlePanel from "./ArticlePanel";
+import CompleteDisplay from "./CompleteDisplay";
+import PersonalWordForm from "./PersonalWordForm";
+import WordCard from "./WordCard";
+
+const { Text } = Typography;
 
 interface GameBoardProps {
   userId: string;
@@ -20,7 +43,9 @@ interface FailedWord {
   definition: string;
 }
 
-export default function GameBoard({ userId }: GameBoardProps) {
+export default function GameBoard({
+  userId,
+}: GameBoardProps) {
   const [currentWord, setCurrentWord] =
     useState<word_with_examples | null>(null);
 
@@ -43,7 +68,7 @@ export default function GameBoard({ userId }: GameBoardProps) {
     useState(false);
 
   const [error, setError] =
-    useState('');
+    useState("");
 
   const [personalWord, setPersonalWord] =
     useState(false);
@@ -56,16 +81,12 @@ export default function GameBoard({ userId }: GameBoardProps) {
 
   const router = useRouter();
 
-  /*
-    Check whether all letters in the word
-    have been guessed.
-  */
   function isComplete(
     word: string,
     guessed: Set<string>
   ) {
     const wordLetters =
-      word.toUpperCase().split('');
+      word.toUpperCase().split("");
 
     for (const letter of wordLetters) {
       if (!guessed.has(letter)) {
@@ -76,13 +97,9 @@ export default function GameBoard({ userId }: GameBoardProps) {
     return true;
   }
 
-  /*
-    Start a new game.
-  */
   async function startNewGame() {
     setLoading(true);
-    setError('');
-
+    setError("");
     setGuessedLetters(new Set());
     setIncorrectGuesses([]);
     setIsCompleted(false);
@@ -90,9 +107,6 @@ export default function GameBoard({ userId }: GameBoardProps) {
     setSessionId(null);
     setCurrentWord(null);
 
-    /*
-      1. Get the currently authenticated user.
-    */
     const {
       data: { user },
       error: authError,
@@ -107,22 +121,21 @@ export default function GameBoard({ userId }: GameBoardProps) {
     }
 
     if (!user) {
-      setError('You must be logged in to play.');
+      setError(
+        "You must be logged in to play."
+      );
       setLoading(false);
-      router.push('/login');
+      router.push("/login");
       return;
     }
 
-    /*
-      2. Check the user's profile.
-    */
     const {
       data: profile,
       error: profileError,
     } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('id', user.id)
+      .from("profiles")
+      .select("id")
+      .eq("id", user.id)
       .maybeSingle();
 
     if (profileError) {
@@ -135,25 +148,19 @@ export default function GameBoard({ userId }: GameBoardProps) {
 
     if (!profile) {
       setError(
-        'Your profile was not found. Please make sure your account has a profile before starting a game.'
+        "Your profile was not found. Please make sure your account has a profile before starting a game."
       );
       setLoading(false);
       return;
     }
 
-    /*
-      3. Get active words.
-    */
     const {
       data: words,
       error: wordError,
     } = await supabase
-      .from('words')
-      .select('*')
-      .eq('is_active', true);
-
-    console.log('Active words:', words);
-    console.log('Word error:', wordError);
+      .from("words")
+      .select("*")
+      .eq("is_active", true);
 
     if (wordError) {
       setError(
@@ -165,34 +172,27 @@ export default function GameBoard({ userId }: GameBoardProps) {
 
     if (!words || words.length === 0) {
       setError(
-        'No active words are available in the database. Please check that your words have is_active = true.'
+        "No active words are available in the database."
       );
       setLoading(false);
       return;
     }
 
-    /*
-      4. Choose a random active word.
-    */
     const randomNumber =
       Math.floor(Math.random() * words.length);
 
-    const randomWord = words[randomNumber];
+    const randomWord =
+      words[randomNumber];
 
-    console.log('Selected word:', randomWord);
-
-    /*
-      5. Get examples for the selected word.
-    */
     const {
       data: examples,
       error: examplesError,
     } = await supabase
-      .from('examples')
+      .from("examples")
       .select(
-        'id, word_id, example_standard, example_funny'
+        "id, word_id, example_standard, example_funny"
       )
-      .eq('word_id', randomWord.id);
+      .eq("word_id", randomWord.id);
 
     if (examplesError) {
       setError(
@@ -202,22 +202,16 @@ export default function GameBoard({ userId }: GameBoardProps) {
       return;
     }
 
-    /*
-      6. Add examples to the selected word.
-    */
     setCurrentWord({
       ...randomWord,
       examples: examples || [],
     });
 
-    /*
-      7. Create game session.
-    */
     const {
       data: session,
       error: sessionError,
     } = await supabase
-      .from('game_sessions')
+      .from("game_sessions")
       .insert({
         user_id: user.id,
         word_id: randomWord.id,
@@ -237,26 +231,15 @@ export default function GameBoard({ userId }: GameBoardProps) {
 
     setSessionId(session.id);
     setLoading(false);
-
-    console.log('New session:', session.id);
-    console.log('User:', user.id);
-    console.log('Word:', randomWord.word);
   }
 
-  /*
-    Start first game.
-  */
   useEffect(() => {
     startNewGame();
   }, []);
 
-  /*
-    Main guessing function.
-
-    Both the physical keyboard and the
-    on-screen keyboard use this function.
-  */
-  async function handleGuess(letter: string) {
+  async function handleGuess(
+    letter: string
+  ) {
     if (
       isCompleted ||
       isFailed ||
@@ -266,11 +249,9 @@ export default function GameBoard({ userId }: GameBoardProps) {
       return;
     }
 
-    const upperLetter = letter.toUpperCase();
+    const upperLetter =
+      letter.toUpperCase();
 
-    /*
-      Ignore letters already tried.
-    */
     if (
       guessedLetters.has(upperLetter) ||
       incorrectGuesses.includes(upperLetter)
@@ -278,9 +259,6 @@ export default function GameBoard({ userId }: GameBoardProps) {
       return;
     }
 
-    /*
-      Correct guess.
-    */
     if (
       currentWord.word
         .toUpperCase()
@@ -293,10 +271,6 @@ export default function GameBoard({ userId }: GameBoardProps) {
 
       setGuessedLetters(newGuess);
 
-      /*
-        Check whether the entire word
-        has been guessed.
-      */
       if (
         isComplete(
           currentWord.word,
@@ -309,12 +283,12 @@ export default function GameBoard({ userId }: GameBoardProps) {
           const {
             error: updateError,
           } = await supabase
-            .from('game_sessions')
+            .from("game_sessions")
             .update({
               status: true,
               correct_guesses: true,
             })
-            .eq('id', sessionId);
+            .eq("id", sessionId);
 
           if (updateError) {
             setError(
@@ -324,16 +298,11 @@ export default function GameBoard({ userId }: GameBoardProps) {
         }
 
         window.dispatchEvent(
-          new Event('wordCompleted')
+          new Event("wordCompleted")
         );
       }
-    }
-
-    /*
-      Incorrect guess.
-    */
-    else {
-      const MAX_GUESSES =
+    } else {
+      const maxGuesses =
         currentWord.word.length + 3;
 
       const newIncorrectGuesses = [
@@ -345,12 +314,9 @@ export default function GameBoard({ userId }: GameBoardProps) {
         newIncorrectGuesses
       );
 
-      /*
-        Player failed the word.
-      */
       if (
         newIncorrectGuesses.length >=
-        MAX_GUESSES
+        maxGuesses
       ) {
         setIsFailed(true);
 
@@ -358,12 +324,12 @@ export default function GameBoard({ userId }: GameBoardProps) {
           const {
             error: updateError,
           } = await supabase
-            .from('game_sessions')
+            .from("game_sessions")
             .update({
               status: true,
               correct_guesses: false,
             })
-            .eq('id', sessionId);
+            .eq("id", sessionId);
 
           if (updateError) {
             setError(
@@ -372,17 +338,13 @@ export default function GameBoard({ userId }: GameBoardProps) {
           }
         }
 
-        /*
-          Add failed word to article-generation list.
-
-          Keep only the last 5 failed words.
-        */
         setFailedWords((prev) => {
           const newFailed = [
             ...prev,
             {
               word: currentWord.word,
-              definition: currentWord.meaning,
+              definition:
+                currentWord.meaning,
             },
           ];
 
@@ -390,45 +352,34 @@ export default function GameBoard({ userId }: GameBoardProps) {
         });
 
         window.dispatchEvent(
-          new Event('wordFailed')
+          new Event("wordFailed")
         );
       }
     }
   }
 
-  /*
-    Physical keyboard input.
-
-    This uses the same handleGuess()
-    function as the on-screen keyboard.
-  */
   useEffect(() => {
-    function handleKeyPress(e: KeyboardEvent) {
+    function handleKeyPress(
+      e: KeyboardEvent
+    ) {
       const target =
         e.target as HTMLElement;
 
-      /*
-        Don't capture keyboard input
-        from forms.
-      */
       if (
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
         target.isContentEditable
       ) {
         return;
       }
 
-      /*
-        Only accept letters.
-      */
       if (!/^[a-zA-Z]$/.test(e.key)) {
         setError(
-          'You need to choose a letter'
+          "You need to choose a letter"
         );
 
         setTimeout(() => {
-          setError('');
+          setError("");
         }, 2000);
 
         return;
@@ -438,13 +389,13 @@ export default function GameBoard({ userId }: GameBoardProps) {
     }
 
     window.addEventListener(
-      'keypress',
+      "keypress",
       handleKeyPress
     );
 
     return () => {
       window.removeEventListener(
-        'keypress',
+        "keypress",
         handleKeyPress
       );
     };
@@ -458,224 +409,329 @@ export default function GameBoard({ userId }: GameBoardProps) {
     loading,
   ]);
 
-  /*
-    Hear word.
-  */
   function speakWord(word: string) {
     const utterance =
       new SpeechSynthesisUtterance(word);
 
-    utterance.lang = 'en-US';
+    utterance.lang = "en-US";
 
     window.speechSynthesis.speak(
       utterance
     );
   }
 
-  /*
-    Loading / no word state.
-  */
   if (!currentWord) {
     return (
-      <div className="w-full">
+      <Flex
+        vertical
+        align="center"
+        justify="center"
+        gap={16}
+        style={{
+          minHeight: 300,
+          width: "100%",
+        }}
+      >
         {loading ? (
-          <div className="text-center py-8">
-            Loading word...
-          </div>
+          <>
+            <Spin size="large" />
+
+            <Text type="secondary">
+              Loading word...
+            </Text>
+          </>
         ) : (
-          <div className="text-center py-8">
-            <p>No words to guess.</p>
+          <>
+            <Text>
+              No words to guess.
+            </Text>
 
             {error && (
-              <p className="mt-2 text-sm text-red-500">
-                {error}
-              </p>
+              <Alert
+                type="error"
+                title={error}
+                showIcon
+              />
             )}
 
-            <button
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
               onClick={startNewGame}
-              className="mt-4 px-4 py-2 rounded-md bg-[#009CDE] text-white hover:bg-[#2d76c0]"
             >
               Try Again
-            </button>
-          </div>
+            </Button>
+          </>
         )}
-      </div>
+      </Flex>
     );
   }
 
+  const maxIncorrectGuesses =
+    currentWord.word.length + 3;
+
   return (
-    <div className="w-full">
-      {/* Error */}
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 1200,
+        margin: "0 auto",
+        padding: "16px",
+      }}
+    >
       {error && (
-        <p className="mb-4 text-center text-sm text-red-500">
-          {error}
-        </p>
+        <Alert
+          type="error"
+          title={error}
+          showIcon
+          closable
+          style={{
+            marginBottom: 16,
+          }}
+        />
       )}
 
-      {/* GRID WRAPPER */}
-      <div className="grid grid-cols-1 lg:grid-cols-[70%_30%] gap-8">
-
-        {/* ================= LEFT COLUMN ================= */}
-        <div className="space-y-6">
-
-          {/* Word card */}
-          <WordCard
-            word={currentWord.word}
-            guessedLetters={
-              isFailed
-                ? new Set(
-                    currentWord.word
-                      .toUpperCase()
-                      .split('')
-                  )
-                : guessedLetters
-            }
-            meaning={currentWord.meaning}
-          />
-
-          {/* On-screen keyboard */}
-          {!isCompleted && !isFailed && (
-            <div className="mt-6">
-              <AlphabetButtons
-                guessedLetters={guessedLetters}
-                onGuess={handleGuess}
-              />
-            </div>
-          )}
-
-          {/* Completion panel */}
-          {(isCompleted || isFailed) && (
-            <CompleteDisplay
+      <Row gutter={[24, 24]}>
+        <Col
+          xs={24}
+          lg={16}
+        >
+          <Space
+            orientation="vertical"
+            size="large"
+            style={{
+              width: "100%",
+            }}
+          >
+            <WordCard
               word={currentWord.word}
-              meaning={currentWord.meaning}
-              examples={currentWord.examples}
-              failed={isFailed}
+              guessedLetters={
+                isFailed
+                  ? new Set(
+                      currentWord.word
+                        .toUpperCase()
+                        .split("")
+                    )
+                  : guessedLetters
+              }
+              meaning={
+                currentWord.meaning
+              }
             />
-          )}
 
-          {/* Article generation */}
-          {failedWords.length >= 1 &&
-            !showArticle && (
-              <div className="text-center">
-                <button
-                  onClick={() =>
-                    setShowArticle(true)
-                  }
-                  className="px-5 py-2 rounded-md border border-[#009CDE] text-[#009CDE] font-medium hover:bg-[#009CDE] hover:text-white transition"
+            {!isCompleted &&
+              !isFailed && (
+                <Card
+                  size="small"
+                  style={{
+                    width: "100%",
+                  }}
                 >
-                  Generate Article
-                </button>
-              </div>
-            )}
+                  <Flex
+                    vertical
+                    align="center"
+                    gap={16}
+                  >
+                    <Text
+                      strong
+                      type="secondary"
+                    >
+                      Use keyboard below
+                    </Text>
 
-          {/* Article */}
-          {showArticle &&
-            failedWords.length > 0 && (
-              <ArticlePanel
-                failedWords={failedWords}
-                onClose={() =>
-                  setShowArticle(false)
+                    <AlphabetButtons
+                      guessedLetters={
+                        guessedLetters
+                      }
+                      onGuess={
+                        handleGuess
+                      }
+                    />
+                  </Flex>
+                </Card>
+              )}
+
+            {(isCompleted ||
+              isFailed) && (
+              <CompleteDisplay
+                word={
+                  currentWord.word
+                }
+                meaning={
+                  currentWord.meaning
+                }
+                examples={
+                  currentWord.examples
+                }
+                failed={
+                  isFailed
                 }
               />
             )}
 
-          {/* Personal word */}
-          <div className="border-t border-gray-200 pt-6 space-y-4">
+            {failedWords.length >= 1 &&
+              !showArticle && (
+                <Flex
+                  justify="center"
+                  style={{
+                    width: "100%",
+                  }}
+                >
+                  <Button
+                    type="primary"
+                    size="large"
+                    icon={
+                      <FileTextOutlined />
+                    }
+                    onClick={() =>
+                      setShowArticle(
+                        true
+                      )
+                    }
+                    style={{
+                      minWidth: 220,
+                      height: 48,
+                      fontSize: 16,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Generate Article
+                  </Button>
+                </Flex>
+              )}
+
+            {showArticle &&
+              failedWords.length > 0 && (
+                <ArticlePanel
+                  failedWords={
+                    failedWords
+                  }
+                  onClose={() =>
+                    setShowArticle(
+                      false
+                    )
+                  }
+                />
+              )}
+
+            <Divider />
 
             {personalWord && (
               <PersonalWordForm
-                userProfile={userId}
+                userProfile={
+                  userId
+                }
               />
             )}
 
-            <div className="text-center">
-              <button
+            <Flex justify="center">
+              <Button
+                type="text"
+                icon={
+                  personalWord
+                    ? <CloseOutlined />
+                    : <PlusOutlined />
+                }
                 onClick={() =>
                   setPersonalWord(
                     !personalWord
                   )
                 }
-                className="text-[#009CDE] font-medium hover:underline"
               >
-                {!personalWord
-                  ? 'Add Your Word'
-                  : 'Close the Form'}
-              </button>
-            </div>
+                {personalWord
+                  ? "Close the Form"
+                  : "Add Your Word"}
+              </Button>
+            </Flex>
+          </Space>
+        </Col>
 
-          </div>
-        </div>
-
-        {/* ================= RIGHT SIDEBAR ================= */}
-        <aside className="space-y-4">
-
-          {/* Correct */}
-          <div className="rounded-xl bg-gradient-to-br from-[#009CDE] to-[#2d76c0] p-6 text-white shadow-sm">
-            <p className="text-sm opacity-90">
-              Correct
-            </p>
-
-            <p className="text-4xl font-bold mt-1">
-              {guessedLetters.size}
-            </p>
-          </div>
-
-          {/* Incorrect */}
-          <div className="rounded-xl bg-gradient-to-br from-[#1e3a8a] to-[#1e40af] p-6 text-white shadow-sm">
-
-            <p className="text-sm opacity-90">
-              Incorrect
-            </p>
-
-            <p className="mt-1">
-              <span className="font-medium">
-                {incorrectGuesses.length}/
-                {currentWord.word.length + 3}
-              </span>
-            </p>
-
-            <p className="mt-1">
-              Letters tried:{' '}
-              <span className="font-medium">
-                {incorrectGuesses
-                  .join(', ')
-                  .toUpperCase()}
-              </span>
-            </p>
-
-          </div>
-
-          {/* Hear word */}
-          {(isCompleted || isFailed) && (
-            <button
-              onClick={() =>
-                speakWord(
-                  currentWord.word
-                )
-              }
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg border border-[#009CDE] text-[#009CDE] font-medium hover:bg-[#009CDE] hover:text-white transition"
-            >
-              🔊 Hear Word
-            </button>
-          )}
-
-          {/* Next / New Game */}
-          <button
-            onClick={startNewGame}
-            disabled={loading}
-            className="w-full px-4 py-3 rounded-lg bg-[#009CDE] text-white font-medium hover:bg-[#2d76c0] transition disabled:opacity-50"
+        <Col
+          xs={24}
+          lg={8}
+        >
+          <Space
+            orientation="vertical"
+            size="middle"
+            style={{
+              width: "100%",
+            }}
           >
-            {loading
-              ? 'Loading...'
-              : isCompleted || isFailed
-                ? 'Start a new game'
-                : 'Next Word'}
-          </button>
+            <Card>
+              <Statistic
+                title="Correct letters"
+                value={
+                  guessedLetters.size
+                }
+              />
+            </Card>
 
-        </aside>
-      </div>
+            <Card>
+              <Statistic
+                title="Incorrect guesses"
+                value={
+                  incorrectGuesses.length
+                }
+                suffix={`/ ${maxIncorrectGuesses}`}
+              />
+
+              <div
+                style={{
+                  marginTop: 12,
+                }}
+              >
+                <Text type="secondary">
+                  Letters tried:
+                </Text>
+
+                <div
+                  style={{
+                    marginTop: 4,
+                  }}
+                >
+                  <Text strong>
+                    {incorrectGuesses
+                      .join(", ")
+                      .toUpperCase() ||
+                      "None"}
+                  </Text>
+                </div>
+              </div>
+            </Card>
+
+            {(isCompleted ||
+              isFailed) && (
+              <Button
+                block
+                icon={
+                  <AudioOutlined />
+                }
+                onClick={() =>
+                  speakWord(
+                    currentWord.word
+                  )
+                }
+              >
+                Hear Word
+              </Button>
+            )}
+
+            <Button
+              type="primary"
+              block
+              loading={loading}
+              onClick={
+                startNewGame
+              }
+            >
+              {isCompleted ||
+              isFailed
+                ? "Start a New Game"
+                : "Next Word"}
+            </Button>
+          </Space>
+        </Col>
+      </Row>
     </div>
   );
 }
-

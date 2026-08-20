@@ -1,33 +1,53 @@
-'use client';
+"use client";
+
+import { useState } from "react";
+import {
+  Alert,
+  Button,
+  Card,
+  Form,
+  Input,
+  Typography,
+} from "antd";
+import { PlusOutlined } from "@ant-design/icons";
 
 import { supabase } from "@/app/lib/supabaseClient";
-import { useState, FormEvent } from 'react';
+
+const { Title, Paragraph } = Typography;
+const { TextArea } = Input;
 
 interface PersonalWordFormProps {
   userProfile: string;
 }
 
+interface FormValues {
+  word: string;
+  meaning: string;
+}
+
 export default function PersonalWordForm({
   userProfile,
 }: PersonalWordFormProps) {
-  const [word, setWord] = useState('');
-  const [meaning, setMeaning] = useState('');
+  const [form] = Form.useForm<FormValues>();
 
-  const [successMessage, setSuccessMessage] = useState('');
-  const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] =
+    useState("");
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const [error, setError] =
+    useState("");
 
-    setError('');
-    setSuccessMessage('');
+  const [loading, setLoading] =
+    useState(false);
 
-    if (!word.trim() || !meaning.trim()) {
-      setError('Please enter both a word and a meaning.');
-      return;
-    }
+  const handleSubmit = async (
+    values: FormValues
+  ) => {
+    setError("");
+    setSuccessMessage("");
+    setLoading(true);
 
-    /* ------------------ 1. Check authentication ------------------ */
+    const word = values.word.trim();
+    const meaning = values.meaning.trim();
 
     const {
       data: { user },
@@ -35,53 +55,47 @@ export default function PersonalWordForm({
     } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      setError('You must be logged in to add a word.');
+      setError(
+        "You must be logged in to add a word."
+      );
+      setLoading(false);
       return;
     }
-
-    console.log('Authenticated user:', user.id);
-
-    /* ------------------ 2. Insert personal word ------------------ */
 
     const {
       data: wordData,
       error: wordError,
     } = await supabase
-      .from('words')
+      .from("words")
       .insert({
-        word: word.trim(),
-        meaning: meaning.trim(),
-
-        // This word belongs only to this user
+        word,
+        meaning,
         user_id: user.id,
-
-        // Personal word
         is_public: false,
-
-        // Available for this user's games
         is_active: true,
       })
       .select()
       .single();
 
     if (wordError || !wordData) {
-      console.error('Word insert error:', wordError);
-
-      setError(
-        wordError?.message || 'Failed to add word'
+      console.error(
+        "Word insert error:",
+        wordError
       );
 
+      setError(
+        wordError?.message ||
+          "Failed to add word."
+      );
+
+      setLoading(false);
       return;
     }
-
-    console.log('Personal word created:', wordData);
-
-    /* ------------------ 3. Create game session ------------------ */
 
     const {
       error: sessionError,
     } = await supabase
-      .from('game_sessions')
+      .from("game_sessions")
       .insert({
         user_id: user.id,
         word_id: wordData.id,
@@ -91,96 +105,158 @@ export default function PersonalWordForm({
 
     if (sessionError) {
       console.error(
-        'Game session insert error:',
+        "Game session insert error:",
         sessionError
       );
 
       setError(sessionError.message);
+      setLoading(false);
       return;
     }
 
-    /* ------------------ 4. Success ------------------ */
+    setSuccessMessage(
+      `"${word}" has been added to your vocabulary.`
+    );
 
-    setSuccessMessage(`"${word.trim()}" has been added`);
-
-    setWord('');
-    setMeaning('');
+    form.resetFields();
+    setLoading(false);
   };
 
   return (
-    <div>
+    <Card
+      style={{
+        width: "100%",
+      }}
+      styles={{
+        body: {
+          padding: "24px 16px",
+        },
+      }}
+    >
+      <Title
+        level={4}
+        style={{
+          marginTop: 0,
+          marginBottom: 4,
+        }}
+      >
+        Add Your Own Word
+      </Title>
+
+      <Paragraph
+        type="secondary"
+        style={{
+          marginBottom: 20,
+        }}
+      >
+        Add a vocabulary word you would like
+        to practice in the game.
+      </Paragraph>
 
       {error && (
-        <p className="mb-4 text-red-600">
-          {error}
-        </p>
+        <Alert
+          type="error"
+          title="Unable to add word"
+          description={error}
+          showIcon
+          closable={{
+            onClose: () => setError(""),
+          }}
+          style={{
+            marginBottom: 16,
+          }}
+        />
       )}
 
       {successMessage && (
-        <p className="mb-4 text-green-600">
-          {successMessage}
-        </p>
+        <Alert
+          type="success"
+          title="Word added"
+          description={successMessage}
+          showIcon
+          closable={{
+            onClose: () =>
+              setSuccessMessage(""),
+          }}
+          style={{
+            marginBottom: 16,
+          }}
+        />
       )}
 
-      <form
-        className="space-y-4"
-        onSubmit={handleSubmit}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        requiredMark={false}
       >
-
-        <div className="flex flex-col">
-          <label className="font-medium text-gray-700">
-            YOUR WORD
-          </label>
-
-          <input
-            type="text"
-            value={word}
-            onChange={(e) => setWord(e.target.value)}
-            className="
-              mt-1 px-3 py-2
-              border border-gray-300
-              rounded-md
-              focus:ring-2
-              focus:ring-[#009CDE]
-            "
-          />
-        </div>
-
-        <div className="flex flex-col">
-          <label className="font-medium text-gray-700">
-            MEANING
-          </label>
-
-          <input
-            type="text"
-            value={meaning}
-            onChange={(e) => setMeaning(e.target.value)}
-            className="
-              mt-1 px-3 py-2
-              border border-gray-300
-              rounded-md
-              focus:ring-2
-              focus:ring-[#009CDE]
-            "
-          />
-        </div>
-
-        <button
-          type="submit"
-          disabled={!word.trim() || !meaning.trim()}
-          className="
-            w-full px-4 py-2 rounded-md
-            bg-[#009CDE] text-white font-medium
-            hover:bg-[#2d76c0]
-            disabled:opacity-50
-            transition
-          "
+        <Form.Item
+          label="Word"
+          name="word"
+          rules={[
+            {
+              required: true,
+              message:
+                "Please enter a word.",
+            },
+            {
+              whitespace: true,
+              message:
+                "Please enter a word.",
+            },
+          ]}
         >
-          Add Word
-        </button>
+          <Input
+            size="large"
+            placeholder="Example: meticulous"
+            autoComplete="off"
+          />
+        </Form.Item>
 
-      </form>
+        <Form.Item
+          label="Meaning"
+          name="meaning"
+          rules={[
+            {
+              required: true,
+              message:
+                "Please enter the meaning.",
+            },
+            {
+              whitespace: true,
+              message:
+                "Please enter the meaning.",
+            },
+          ]}
+        >
+          <TextArea
+            placeholder="Enter a short definition..."
+            showCount
+            maxLength={300}
+            autoSize={{
+              minRows: 3,
+              maxRows: 6,
+            }}
+          />
+        </Form.Item>
 
-    </div>
+        <Form.Item
+          style={{
+            marginBottom: 0,
+          }}
+        >
+          <Button
+            type="primary"
+            htmlType="submit"
+            icon={<PlusOutlined />}
+            loading={loading}
+            block
+            size="large"
+          >
+            Add Word
+          </Button>
+        </Form.Item>
+      </Form>
+    </Card>
   );
 }
