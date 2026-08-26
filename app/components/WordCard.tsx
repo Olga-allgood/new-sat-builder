@@ -1,8 +1,16 @@
 "use client";
 
-import { Card, Flex, Typography } from "antd";
+import {
+  Card,
+  Flex,
+  Grid,
+  Typography,
+} from "antd";
 
-const { Paragraph } = Typography;
+const {
+  Paragraph,
+  Text,
+} = Typography;
 
 interface WordCardProps {
   word: string;
@@ -15,84 +23,201 @@ export default function WordCard({
   guessedLetters,
   meaning,
 }: WordCardProps) {
+  const screens = Grid.useBreakpoint();
+
+  const isMobile = !screens.md;
+
+  const letterWidth = isMobile
+    ? 34
+    : 52;
+
+  const letterHeight = isMobile
+    ? 50
+    : 68;
+
+  const letterFontSize = isMobile
+    ? 30
+    : 44;
+
   return (
     <Card
       style={{
         width: "100%",
+        borderRadius: 16,
+        border: "1px solid #e8e8e8",
       }}
       styles={{
         body: {
-          padding: "24px 16px",
+          padding: isMobile
+            ? "24px 16px"
+            : "36px 28px",
         },
       }}
     >
       <Flex
         vertical
         align="center"
-        gap={24}
+        gap={isMobile ? 24 : 32}
         style={{
           width: "100%",
         }}
       >
-        {/* WORD LETTERS */}
-        <Flex
-          justify="center"
-          wrap="wrap"
-          gap={8}
+        {/* ===============================================
+            WORD
+        =============================================== */}
+
+        <div
           style={{
             width: "100%",
           }}
         >
-          {word.split("").map((letter, index) => {
-            const isGuessed = guessedLetters.has(
-              letter.toUpperCase()
-            );
+          <Text
+            type="secondary"
+            style={{
+              display: "block",
+              textAlign: "center",
 
-            return (
-              <div
-                key={index}
-                style={{
-                  width: "clamp(28px, 8vw, 48px)",
-                  height: "clamp(44px, 12vw, 64px)",
+              fontSize: isMobile
+                ? 13
+                : 14,
 
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+              fontWeight: 600,
 
-                  borderBottom: isGuessed
-                    ? "4px solid #1677ff"
-                    : "4px solid #d9d9d9",
+              textTransform: "uppercase",
+              letterSpacing: "0.8px",
 
-                  fontFamily: "monospace",
-                  fontSize: "clamp(28px, 8vw, 48px)",
-                  fontWeight: 700,
+              marginBottom: isMobile
+                ? 14
+                : 18,
+            }}
+          >
+            Guess the word
+          </Text>
 
-                  color: isGuessed
-                    ? "#1677ff"
-                    : "#bfbfbf",
-                }}
-              >
-                {isGuessed
-                  ? letter.toUpperCase()
-                  : ""}
-              </div>
-            );
-          })}
-        </Flex>
+          <Flex
+            justify="center"
+            wrap="wrap"
+            gap={isMobile ? 6 : 10}
+            style={{
+              width: "100%",
+            }}
+          >
+            {word
+              .split("")
+              .map(
+                (
+                  letter,
+                  index
+                ) => {
+                  const isGuessed =
+                    guessedLetters.has(
+                      letter.toUpperCase()
+                    );
 
-        {/* DEFINITION */}
-        <Paragraph
-          strong
+                  return (
+                    <div
+                      key={index}
+                      style={{
+                        width:
+                          letterWidth,
+
+                        height:
+                          letterHeight,
+
+                        display:
+                          "flex",
+
+                        alignItems:
+                          "center",
+
+                        justifyContent:
+                          "center",
+
+                        borderBottom:
+                          isGuessed
+                            ? "4px solid #1677ff"
+                            : "4px solid #d9d9d9",
+
+                        fontFamily:
+                          "monospace",
+
+                        fontSize:
+                          letterFontSize,
+
+                        fontWeight:
+                          700,
+
+                        lineHeight: 1,
+
+                        color:
+                          isGuessed
+                            ? "#1677ff"
+                            : "#bfbfbf",
+                      }}
+                    >
+                      {isGuessed
+                        ? letter.toUpperCase()
+                        : ""}
+                    </div>
+                  );
+                }
+              )}
+          </Flex>
+        </div>
+
+        {/* ===============================================
+            DEFINITION
+        =============================================== */}
+
+        <div
           style={{
-            margin: 0,
-            maxWidth: 700,
+            width: "100%",
+            maxWidth: 720,
+
+            paddingTop: isMobile
+              ? 4
+              : 8,
+
             textAlign: "center",
-            fontSize: "clamp(16px, 4vw, 20px)",
-            lineHeight: 1.5,
           }}
         >
-          {meaning}
-        </Paragraph>
+          <Text
+            type="secondary"
+            style={{
+              display: "block",
+
+              fontSize: isMobile
+                ? 13
+                : 14,
+
+              fontWeight: 600,
+
+              textTransform: "uppercase",
+              letterSpacing: "0.8px",
+
+              marginBottom: 8,
+            }}
+          >
+            Definition
+          </Text>
+
+          <Paragraph
+            strong
+            style={{
+              margin: 0,
+
+              fontSize: isMobile
+                ? 17
+                : 21,
+
+              lineHeight: 1.6,
+
+              color: "#262626",
+            }}
+          >
+            {meaning}
+          </Paragraph>
+        </div>
       </Flex>
     </Card>
   );

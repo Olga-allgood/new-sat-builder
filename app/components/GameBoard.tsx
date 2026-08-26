@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import {
   Alert,
   Button,
@@ -9,12 +10,14 @@ import {
   Col,
   Divider,
   Flex,
+  Grid,
   Row,
   Space,
   Spin,
   Statistic,
   Typography,
 } from "antd";
+
 import {
   AudioOutlined,
   CloseOutlined,
@@ -81,6 +84,14 @@ export default function GameBoard({
 
   const router = useRouter();
 
+  const screens = Grid.useBreakpoint();
+
+  const isMobile = !screens.md;
+
+  /* =========================================================
+     CHECK WHETHER WORD IS COMPLETE
+  ========================================================= */
+
   function isComplete(
     word: string,
     guessed: Set<string>
@@ -96,6 +107,10 @@ export default function GameBoard({
 
     return true;
   }
+
+  /* =========================================================
+     START NEW GAME
+  ========================================================= */
 
   async function startNewGame() {
     setLoading(true);
@@ -116,7 +131,9 @@ export default function GameBoard({
       setError(
         `Authentication error: ${authError.message}`
       );
+
       setLoading(false);
+
       return;
     }
 
@@ -124,10 +141,17 @@ export default function GameBoard({
       setError(
         "You must be logged in to play."
       );
+
       setLoading(false);
+
       router.push("/login");
+
       return;
     }
+
+    /* =======================================================
+       CHECK PROFILE
+    ======================================================= */
 
     const {
       data: profile,
@@ -142,7 +166,9 @@ export default function GameBoard({
       setError(
         `Unable to check your profile: ${profileError.message}`
       );
+
       setLoading(false);
+
       return;
     }
 
@@ -150,9 +176,15 @@ export default function GameBoard({
       setError(
         "Your profile was not found. Please make sure your account has a profile before starting a game."
       );
+
       setLoading(false);
+
       return;
     }
+
+    /* =======================================================
+       LOAD WORDS
+    ======================================================= */
 
     const {
       data: words,
@@ -166,7 +198,9 @@ export default function GameBoard({
       setError(
         `Could not load words: ${wordError.message}`
       );
+
       setLoading(false);
+
       return;
     }
 
@@ -174,15 +208,23 @@ export default function GameBoard({
       setError(
         "No active words are available in the database."
       );
+
       setLoading(false);
+
       return;
     }
 
     const randomNumber =
-      Math.floor(Math.random() * words.length);
+      Math.floor(
+        Math.random() * words.length
+      );
 
     const randomWord =
       words[randomNumber];
+
+    /* =======================================================
+       LOAD EXAMPLES
+    ======================================================= */
 
     const {
       data: examples,
@@ -198,7 +240,9 @@ export default function GameBoard({
       setError(
         `Could not load examples: ${examplesError.message}`
       );
+
       setLoading(false);
+
       return;
     }
 
@@ -206,6 +250,10 @@ export default function GameBoard({
       ...randomWord,
       examples: examples || [],
     });
+
+    /* =======================================================
+       CREATE GAME SESSION
+    ======================================================= */
 
     const {
       data: session,
@@ -225,17 +273,28 @@ export default function GameBoard({
       setError(
         `Could not create game session: ${sessionError.message}`
       );
+
       setLoading(false);
+
       return;
     }
 
     setSessionId(session.id);
+
     setLoading(false);
   }
+
+  /* =========================================================
+     INITIAL GAME
+  ========================================================= */
 
   useEffect(() => {
     startNewGame();
   }, []);
+
+  /* =========================================================
+     HANDLE LETTER GUESS
+  ========================================================= */
 
   async function handleGuess(
     letter: string
@@ -254,10 +313,16 @@ export default function GameBoard({
 
     if (
       guessedLetters.has(upperLetter) ||
-      incorrectGuesses.includes(upperLetter)
+      incorrectGuesses.includes(
+        upperLetter
+      )
     ) {
       return;
     }
+
+    /* =======================================================
+       CORRECT GUESS
+    ======================================================= */
 
     if (
       currentWord.word
@@ -301,7 +366,13 @@ export default function GameBoard({
           new Event("wordCompleted")
         );
       }
-    } else {
+    }
+
+    /* =======================================================
+       INCORRECT GUESS
+    ======================================================= */
+
+    else {
       const maxGuesses =
         currentWord.word.length + 3;
 
@@ -358,6 +429,10 @@ export default function GameBoard({
     }
   }
 
+  /* =========================================================
+     PHYSICAL KEYBOARD SUPPORT
+  ========================================================= */
+
   useEffect(() => {
     function handleKeyPress(
       e: KeyboardEvent
@@ -409,9 +484,15 @@ export default function GameBoard({
     loading,
   ]);
 
+  /* =========================================================
+     TEXT TO SPEECH
+  ========================================================= */
+
   function speakWord(word: string) {
     const utterance =
-      new SpeechSynthesisUtterance(word);
+      new SpeechSynthesisUtterance(
+        word
+      );
 
     utterance.lang = "en-US";
 
@@ -419,6 +500,10 @@ export default function GameBoard({
       utterance
     );
   }
+
+  /* =========================================================
+     LOADING / EMPTY STATE
+  ========================================================= */
 
   if (!currentWord) {
     return (
@@ -428,7 +513,7 @@ export default function GameBoard({
         justify="center"
         gap={16}
         style={{
-          minHeight: 300,
+          minHeight: 400,
           width: "100%",
         }}
       >
@@ -436,13 +521,22 @@ export default function GameBoard({
           <>
             <Spin size="large" />
 
-            <Text type="secondary">
+            <Text
+              type="secondary"
+              style={{
+                fontSize: 16,
+              }}
+            >
               Loading word...
             </Text>
           </>
         ) : (
           <>
-            <Text>
+            <Text
+              style={{
+                fontSize: 16,
+              }}
+            >
               No words to guess.
             </Text>
 
@@ -456,8 +550,13 @@ export default function GameBoard({
 
             <Button
               type="primary"
-              icon={<ReloadOutlined />}
-              onClick={startNewGame}
+              size="large"
+              icon={
+                <ReloadOutlined />
+              }
+              onClick={
+                startNewGame
+              }
             >
               Try Again
             </Button>
@@ -470,15 +569,24 @@ export default function GameBoard({
   const maxIncorrectGuesses =
     currentWord.word.length + 3;
 
+  /* =========================================================
+     MAIN GAME
+  ========================================================= */
+
   return (
     <div
       style={{
         width: "100%",
-        maxWidth: 1200,
+        maxWidth: 1080,
         margin: "0 auto",
-        padding: "16px",
+
+        padding: isMobile
+          ? "16px 14px 32px"
+          : "28px 24px 48px",
       }}
     >
+      {/* ERROR */}
+
       {error && (
         <Alert
           type="error"
@@ -486,25 +594,48 @@ export default function GameBoard({
           showIcon
           closable
           style={{
-            marginBottom: 16,
+            marginBottom: 22,
           }}
         />
       )}
 
-      <Row gutter={[24, 24]}>
+      {/* =====================================================
+          MAIN LAYOUT
+      ===================================================== */}
+
+      <Row
+        gutter={
+          isMobile
+            ? [16, 24]
+            : [32, 32]
+        }
+        align="top"
+      >
+        {/* ===================================================
+            GAME AREA
+        =================================================== */}
+
         <Col
           xs={24}
-          lg={16}
+          lg={17}
         >
           <Space
             orientation="vertical"
-            size="large"
+            size={
+              isMobile
+                ? "middle"
+                : "large"
+            }
             style={{
               width: "100%",
             }}
           >
+            {/* WORD */}
+
             <WordCard
-              word={currentWord.word}
+              word={
+                currentWord.word
+              }
               guessedLetters={
                 isFailed
                   ? new Set(
@@ -519,22 +650,45 @@ export default function GameBoard({
               }
             />
 
+            {/* =================================================
+                KEYBOARD
+            ================================================= */}
+
             {!isCompleted &&
               !isFailed && (
                 <Card
-                  size="small"
                   style={{
                     width: "100%",
+                    borderRadius: 14,
+                  }}
+                  styles={{
+                    body: {
+                      padding: isMobile
+                        ? "18px 12px"
+                        : "24px 20px",
+                    },
                   }}
                 >
                   <Flex
                     vertical
                     align="center"
-                    gap={16}
+                    gap={
+                      isMobile
+                        ? 14
+                        : 20
+                    }
                   >
                     <Text
                       strong
-                      type="secondary"
+                      style={{
+                        fontSize:
+                          isMobile
+                            ? 15
+                            : 17,
+
+                        color:
+                          "#4b5563",
+                      }}
                     >
                       Use keyboard below
                     </Text>
@@ -554,6 +708,10 @@ export default function GameBoard({
                 </Card>
               )}
 
+            {/* =================================================
+                COMPLETE / FAILED
+            ================================================= */}
+
             {(isCompleted ||
               isFailed) && (
               <CompleteDisplay
@@ -572,12 +730,18 @@ export default function GameBoard({
               />
             )}
 
-            {failedWords.length >= 1 &&
+            {/* =================================================
+                ARTICLE GENERATOR
+            ================================================= */}
+
+            {failedWords.length >=
+              1 &&
               !showArticle && (
                 <Flex
                   justify="center"
                   style={{
                     width: "100%",
+                    paddingTop: 4,
                   }}
                 >
                   <Button
@@ -604,7 +768,8 @@ export default function GameBoard({
               )}
 
             {showArticle &&
-              failedWords.length > 0 && (
+              failedWords.length >
+                0 && (
                 <ArticlePanel
                   failedWords={
                     failedWords
@@ -619,6 +784,10 @@ export default function GameBoard({
 
             <Divider />
 
+            {/* =================================================
+                PERSONAL WORD
+            ================================================= */}
+
             {personalWord && (
               <PersonalWordForm
                 userProfile={
@@ -632,14 +801,21 @@ export default function GameBoard({
                 type="text"
                 icon={
                   personalWord
-                    ? <CloseOutlined />
-                    : <PlusOutlined />
+                    ? (
+                      <CloseOutlined />
+                    )
+                    : (
+                      <PlusOutlined />
+                    )
                 }
                 onClick={() =>
                   setPersonalWord(
                     !personalWord
                   )
                 }
+                style={{
+                  fontSize: 15,
+                }}
               >
                 {personalWord
                   ? "Close the Form"
@@ -649,9 +825,13 @@ export default function GameBoard({
           </Space>
         </Col>
 
+        {/* ===================================================
+            SIDEBAR
+        =================================================== */}
+
         <Col
           xs={24}
-          lg={8}
+          lg={7}
         >
           <Space
             orientation="vertical"
@@ -660,39 +840,113 @@ export default function GameBoard({
               width: "100%",
             }}
           >
-            <Card>
+            {/* CORRECT LETTERS */}
+
+            <Card
+              style={{
+                borderRadius: 14,
+              }}
+              styles={{
+                body: {
+                  padding:
+                    isMobile
+                      ? 18
+                      : 22,
+                },
+              }}
+            >
               <Statistic
-                title="Correct letters"
+                title={
+                  <span
+                    style={{
+                      fontSize: 15,
+                    }}
+                  >
+                    Correct letters
+                  </span>
+                }
                 value={
                   guessedLetters.size
                 }
+                styles={{
+                  content: {
+                    fontSize:
+                      isMobile
+                        ? 25
+                        : 30,
+
+                    fontWeight: 600,
+                  },
+                }}
               />
             </Card>
 
-            <Card>
+            {/* INCORRECT GUESSES */}
+
+            <Card
+              style={{
+                borderRadius: 14,
+              }}
+              styles={{
+                body: {
+                  padding:
+                    isMobile
+                      ? 18
+                      : 22,
+                },
+              }}
+            >
               <Statistic
-                title="Incorrect guesses"
+                title={
+                  <span
+                    style={{
+                      fontSize: 15,
+                    }}
+                  >
+                    Incorrect guesses
+                  </span>
+                }
                 value={
                   incorrectGuesses.length
                 }
                 suffix={`/ ${maxIncorrectGuesses}`}
+                styles={{
+                  content: {
+                    fontSize:
+                      isMobile
+                        ? 25
+                        : 30,
+
+                    fontWeight: 600,
+                  },
+                }}
               />
 
               <div
                 style={{
-                  marginTop: 12,
+                  marginTop: 18,
                 }}
               >
-                <Text type="secondary">
+                <Text
+                  type="secondary"
+                  style={{
+                    fontSize: 14,
+                  }}
+                >
                   Letters tried:
                 </Text>
 
                 <div
                   style={{
-                    marginTop: 4,
+                    marginTop: 6,
                   }}
                 >
-                  <Text strong>
+                  <Text
+                    strong
+                    style={{
+                      fontSize: 16,
+                    }}
+                  >
                     {incorrectGuesses
                       .join(", ")
                       .toUpperCase() ||
@@ -702,10 +956,15 @@ export default function GameBoard({
               </div>
             </Card>
 
+            {/* =================================================
+                HEAR WORD
+            ================================================= */}
+
             {(isCompleted ||
               isFailed) && (
               <Button
                 block
+                size="large"
                 icon={
                   <AudioOutlined />
                 }
@@ -719,13 +978,24 @@ export default function GameBoard({
               </Button>
             )}
 
+            {/* =================================================
+                NEXT WORD
+            ================================================= */}
+
             <Button
               type="primary"
               block
-              loading={loading}
+              size="large"
+              loading={
+                loading
+              }
               onClick={
                 startNewGame
               }
+              style={{
+                minHeight: 44,
+                fontWeight: 600,
+              }}
             >
               {isCompleted ||
               isFailed

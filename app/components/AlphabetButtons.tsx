@@ -1,6 +1,10 @@
 "use client";
 
-import { Button, Flex } from "antd";
+import {
+  Button,
+  Flex,
+  Grid,
+} from "antd";
 
 interface AlphabetButtonsProps {
   guessedLetters: Set<string>;
@@ -19,104 +23,156 @@ export default function AlphabetButtons({
   incorrectGuesses,
   onGuess,
 }: AlphabetButtonsProps) {
+  const screens = Grid.useBreakpoint();
+
+  const isMobile = !screens.md;
+
   /*
-   * Normalize everything to uppercase.
-   *
-   * This is important because the keyboard letters
-   * are uppercase, while guesses could potentially
-   * arrive in either upper or lowercase.
+   * Normalize guesses to uppercase so they
+   * match the keyboard letters consistently.
    */
   const correctLetters = new Set(
-    Array.from(guessedLetters).map((letter) =>
-      letter.toUpperCase()
+    Array.from(guessedLetters).map(
+      (letter) =>
+        letter.toUpperCase()
     )
   );
 
   const incorrectLetters = new Set(
-    incorrectGuesses.map((letter) =>
-      letter.toUpperCase()
+    incorrectGuesses.map(
+      (letter) =>
+        letter.toUpperCase()
     )
   );
+
+  const buttonHeight =
+    isMobile ? 42 : 50;
+
+  const buttonMaxWidth =
+    isMobile ? 42 : 52;
+
+  const buttonFontSize =
+    isMobile ? 14 : 17;
+
+  const rowGap =
+    isMobile ? 5 : 8;
 
   return (
     <Flex
       vertical
-      gap={8}
+      gap={isMobile ? 7 : 10}
       align="center"
       style={{
         width: "100%",
-        maxWidth: 540,
+
+        maxWidth: isMobile
+          ? 460
+          : 620,
+
         margin: "0 auto",
       }}
     >
       {keyboardRows.map(
-        (row, rowIndex) => (
+        (
+          row,
+          rowIndex
+        ) => (
           <Flex
             key={rowIndex}
             justify="center"
-            gap={6}
+            gap={rowGap}
             style={{
               width: "100%",
             }}
           >
-            {row.map((letter) => {
-              const isCorrect =
-                correctLetters.has(letter);
+            {row.map(
+              (letter) => {
+                const isCorrect =
+                  correctLetters.has(
+                    letter
+                  );
 
-              const isIncorrect =
-                incorrectLetters.has(letter);
+                const isIncorrect =
+                  incorrectLetters.has(
+                    letter
+                  );
 
-              /*
-               * A letter is disabled regardless
-               * of whether the guess was correct
-               * or incorrect.
-               */
-              const isUsed =
-                isCorrect || isIncorrect;
+                /*
+                 * Disable a key after either
+                 * a correct or incorrect guess.
+                 */
+                const isUsed =
+                  isCorrect ||
+                  isIncorrect;
 
-              return (
-                <Button
-                  key={letter}
-                  type={
-                    isUsed
-                      ? "default"
-                      : "primary"
-                  }
-                  disabled={isUsed}
-                  onClick={() =>
-                    onGuess(letter)
-                  }
-                  aria-label={
-                    isIncorrect
-                      ? `${letter}, incorrect guess`
-                      : isCorrect
-                        ? `${letter}, already guessed`
-                        : `Guess ${letter}`
-                  }
-                  style={{
-                    flex: "1 1 0",
-                    minWidth: 0,
-                    maxWidth: 46,
-                    height: 44,
-                    padding: 0,
-                    fontSize: 15,
-                    fontWeight: 600,
-                    touchAction:
-                      "manipulation",
+                return (
+                  <Button
+                    key={letter}
+                    type={
+                      isUsed
+                        ? "default"
+                        : "primary"
+                    }
+                    disabled={
+                      isUsed
+                    }
+                    onClick={() =>
+                      onGuess(
+                        letter
+                      )
+                    }
+                    aria-label={
+                      isIncorrect
+                        ? `${letter}, incorrect guess`
+                        : isCorrect
+                          ? `${letter}, already guessed`
+                          : `Guess ${letter}`
+                    }
+                    style={{
+                      flex:
+                        "1 1 0",
 
-                    ...(isUsed && {
-                      background:
-                        "#f5f5f5",
-                      borderColor:
-                        "#d9d9d9",
-                      color: "#bfbfbf",
-                    }),
-                  }}
-                >
-                  {letter}
-                </Button>
-              );
-            })}
+                      minWidth: 0,
+
+                      maxWidth:
+                        buttonMaxWidth,
+
+                      height:
+                        buttonHeight,
+
+                      padding: 0,
+
+                      borderRadius:
+                        isMobile
+                          ? 7
+                          : 9,
+
+                      fontSize:
+                        buttonFontSize,
+
+                      fontWeight:
+                        600,
+
+                      touchAction:
+                        "manipulation",
+
+                      ...(isUsed && {
+                        background:
+                          "#f5f5f5",
+
+                        borderColor:
+                          "#d9d9d9",
+
+                        color:
+                          "#bfbfbf",
+                      }),
+                    }}
+                  >
+                    {letter}
+                  </Button>
+                );
+              }
+            )}
           </Flex>
         )
       )}
